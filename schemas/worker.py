@@ -4,7 +4,7 @@ from enum import Enum
 class Wrole(str, Enum):
     admin = "Administrador"
     manager = "Gerente"
-    collaborator = "Colaborador"
+    technical = "Tecnico"
 
 class worker(bm):
     wname:str

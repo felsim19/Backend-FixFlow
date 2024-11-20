@@ -8,7 +8,7 @@ class workerRegistrastion(base):
     password = Column(String(80), nullable=False)
     document = Column(String(50), primary_key=True, nullable=False)
     company = Column(String(50), ForeignKey('company.company_user'), nullable=False)
-    wrole = Column(Enum("Gerente","Administrador","Colaborador"), default="Gerente", nullable=False)
+    wrole = Column(Enum("Gerente","Administrador","Tecnico"), default="Gerente", nullable=False)
     
     #Relacion birideccional hacia la company
     tcompany = relationship("companyRegistration", back_populates="tworker")
