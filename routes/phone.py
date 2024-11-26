@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
+from schemas.delivery import delivery
 from schemas.phone import somePhone as sp
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from connection.config import get_db
 from schemas.company import status
 from models.phone import phoneRegistrastion
+from models.delivery import deliveryRegistration
 
 router = APIRouter()
 
@@ -80,12 +82,23 @@ async def someDataPhone(db: Session = Depends(get_db)):
     
 
 @router.put("/deliveredPhone/{phone_ref}", response_model=status)
-async def deliveredPhone(phone_ref:str,db:Session = Depends(get_db)):
+async def deliveredPhone(phone_ref:str,delivery:delivery,db:Session = Depends(get_db)):
     try:
         phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.phone_ref == phone_ref).first()
         phone.delivered = True
         db.commit()
         db.refresh(phone)
+
+        data = deliveryRegistration(
+            ref_shift = delivery.ref_shift,
+            product = delivery.product,
+            sale = delivery.sale,
+            original_price = delivery.original_price,
+            revenue_price = delivery.revenue_price
+        )
+        db.add(data)
+        db.commit()
+        db.refresh(data)
         return status(status="El Telefono ha sido Entregado")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -7,5 +7,6 @@ class outflowRegistration(base):
     ref_outflow = Column(Integer,primary_key=True, autoincrement=True)
     ref_shift = Column(String(60), ForeignKey("shift.ref_shift"), nullable=False)
     price = Column(Float(), nullable=False)
+    details = Column(String(250), nullable=False)
 
     tshift = relationship("shiftRegistration", back_populates="toutflow")

@@ -94,7 +94,8 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         return {
             "status": "Inicio de sesión exitoso",
             "role": db_worker.wrole,
-            "wname": db_worker.wname
+            "wname": db_worker.wname,
+            "shift": new_shift.ref_shift
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
