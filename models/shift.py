@@ -12,3 +12,5 @@ class shiftRegistration(base):
     total_gain = Column(Float)
 
     tworker = relationship("workerRegistrastion", back_populates="tshift")
+    tdelivery = relationship("deliveryRegistration", back_populates="tshift")
+    toutflow = relationship("outflowRegistration", back_populates="tshift")

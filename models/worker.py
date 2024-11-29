@@ -12,4 +12,5 @@ class workerRegistrastion(base):
     
     #Relacion birideccional hacia la company
     tcompany = relationship("companyRegistration", back_populates="tworker")
+    tbill = relationship("billRegistrastion", back_populates="tworker")
     tshift = relationship("shiftRegistration", back_populates="tworker") 
