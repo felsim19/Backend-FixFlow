@@ -16,4 +16,5 @@ class billRegistrastion(base):
     
     tphone = relationship("phoneRegistrastion", back_populates="tbill")
     tshift = relationship("shiftRegistration", back_populates="tbill")
+    treparation = relationship("reparationRegistration", back_populates="tbill")
 
