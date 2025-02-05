@@ -11,8 +11,9 @@ class billRegistrastion(base):
     client_name = Column(String(30), nullable=False)
     client_phone = Column(String(20), nullable=False)
     payment = Column(Float())
-    document = Column(String(50), ForeignKey('worker.document') ,nullable=False)
+    ref_shift = Column(String(60), ForeignKey('shift.ref_shift') ,nullable=False)
+    wname = Column(String(50), nullable=False)
     
     tphone = relationship("phoneRegistrastion", back_populates="tbill")
-    tworker = relationship("workerRegistrastion", back_populates="tbill")
+    tshift = relationship("shiftRegistration", back_populates="tbill")
 

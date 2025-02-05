@@ -14,5 +14,6 @@ class phoneRegistrastion(base):
     delivered = Column(Boolean(),default=False)
     date_delivered = Column(Date())
     
-    tbrand = relationship("BrandsRegistration", back_populates="tphone")
+    tbrand = relationship("brandsRegistration", back_populates="tphone")
     tbill = relationship("billRegistrastion", back_populates="tphone")
+    treparation = relationship("reparationRegistration", back_populates="tphone")

@@ -8,7 +8,8 @@ class bill(bm):
     client_name:str
     client_phone:str
     payment:float
-    document:str
+    wname:str
+    ref_shift:str
     phones: list[phone]
     
 
@@ -21,3 +22,9 @@ class someBillRepair(bm):
     bill_number:str
     client_name:str
     phone_ref:str
+
+class billRepairPhone(bm):
+    due:float
+    client_name:str
+    payment:float
+    bill_number:str

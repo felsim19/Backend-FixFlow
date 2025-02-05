@@ -3,7 +3,7 @@ from connection.config import base
 from sqlalchemy.orm import relationship
 
 
-class BrandsRegistration(base):
+class brandsRegistration(base):
     __tablename__ = "brands"
     id = Column(Integer,unique=True , autoincrement=True) 
     name = Column(String(60),primary_key=True, index=True)        

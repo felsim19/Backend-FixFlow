@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from pydantic import BaseModel as bm
 
 class shiftclose(bm):
@@ -9,4 +9,9 @@ class shiftclose(bm):
 class someShift(bm):
     ref_shift:str
     document:str
-    start_time:datetime
+    date_shift:date
+
+class someShiftReceived(bm):
+    phone_ref:str
+    document:str
+    date_shift:date

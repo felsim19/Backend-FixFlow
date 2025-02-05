@@ -7,4 +7,4 @@ class devicesRegistration(base):
     id_brands = Column(String(60), ForeignKey('brands.name'))
     name = Column(String(80), primary_key=True)
     
-    tbrand = relationship("BrandsRegistration", back_populates="tdevice")
+    tbrand = relationship("brandsRegistration", back_populates="tdevice")

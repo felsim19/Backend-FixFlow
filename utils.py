@@ -6,6 +6,8 @@ from models.bill import billRegistrastion
 from models.phone import phoneRegistrastion
 import re
 
+from models.worker import workerRegistrastion
+
 regex_mail = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
 def is_valid_mail(mail:str) -> bool:
@@ -23,26 +25,29 @@ def generate_shift_reference(db: Session):
     shift_reference = f"{today_date}_{daily_shifts + 1}"
     return shift_reference
 
-def generate_bill_number (db: Session):
-    last_bill = db.query(billRegistrastion).order_by(desc(billRegistrastion.bill_number)).first()
-    
+def generate_bill_number(db: Session, company_user: str):
+    last_bill = (
+        db.query(billRegistrastion)
+        .filter(billRegistrastion.bill_number.like(f"{company_user}-%"))
+        .order_by(desc(billRegistrastion.bill_number))
+        .first()
+    )
+
     if last_bill:
-        last_number = last_bill.bill_number[:-2]
-        last_letter = last_bill.bill_number[-1]
+        last_number = last_bill.bill_number.split('-')[1]
+        last_letter = last_bill.bill_number.split('-')[2]
         
         next_number = int(last_number) + 1
-        
         if next_number > 9999:
-            next_number = 1 
-            last_letter = chr(ord(last_letter) + 1 )
-
-        next_bill_number = f"{next_number:04d}-{last_letter}" 
+            next_number = 1
+            last_letter = chr(ord(last_letter) + 1)
         
+        next_bill_number = f"{company_user}-{next_number:04d}-{last_letter}"
     else:
-        next_bill_number = "0001-A"
-        
-        
+        next_bill_number = f"{company_user}-0001-A"
+    
     return next_bill_number
+
 
 def internal_reference (db: Session, bill_number:str):
     # Contar cuántos dispositivos ya están registrados con este número de factura

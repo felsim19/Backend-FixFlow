@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from routes import company, worker, bill, brands, devices, phone, delivery, outlow, shift
+from routes import company, worker, bill, brands, devices, phone, delivery, outlow, shift, reparation
 from connection.config import engine
 from models.company import base
 from models.worker import base
@@ -12,6 +12,7 @@ from models.phone import base
 from models.bill import base
 from models.delivery import base
 from models.outflow import base
+from models.reparation import base
 
 app = FastAPI()
 
@@ -27,12 +28,13 @@ base.metadata.create_all(bind=engine)
 
 app.include_router(company.router)
 app.include_router(worker.router)
+app.include_router(shift.router)
+app.include_router(delivery.router)
+app.include_router(outlow.router)
 app.include_router(bill.router)
 app.include_router(brands.router)
 app.include_router(devices.router)
 app.include_router(phone.router)
-app.include_router(delivery.router)
-app.include_router(outlow.router)
-app.include_router(shift.router)
+app.include_router(reparation.router)
 
 app.mount("/static", StaticFiles(directory="companyImg"), name="static")

@@ -7,19 +7,27 @@ from connection.config import get_db
 from schemas.company import status
 from models.phone import phoneRegistrastion
 from models.delivery import deliveryRegistration
+from models.bill import billRegistrastion
+from models.reparation import reparationRegistration
 
 router = APIRouter()
 
 
-@router.get("/someDataPhone", response_model=list[sp])
-async def someDataPhone(db: Session = Depends(get_db)):
+@router.get("/someDataPhone/{company}", response_model=list[sp])
+async def someDataPhone(company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p inner join bill as b
-            on p.bill_number = b.bill_number where p.repaired = 0
+            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p 
+            INNER JOIN bill AS b ON p.bill_number = b.bill_number
+            INNER JOIN shift AS s ON b.ref_shift = s.ref_shift
+            INNER JOIN worker AS w ON s.document = w.document
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND p.repaired = 0;
         """)
 
-        result = db.execute(query).mappings().all()  # Aquí obtenemos las filas como diccionarios
+        result = db.execute(query, {
+            "company": company,  # Permite búsquedas parciales
+            }).mappings().all() #Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
@@ -28,30 +36,45 @@ async def someDataPhone(db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 
-@router.put("/repairphone/{phone_ref}", response_model=status)
-async def repairphone(phone_ref:str,db:Session = Depends(get_db)):
+
+@router.put("/repairphone/{phone_ref}/{ref_shift}", response_model=status)
+async def repairphone(phone_ref:str, ref_shift:str, db:Session = Depends(get_db)):
     try:
         phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.phone_ref == phone_ref).first()
         phone.repaired = True
         db.commit()
         db.refresh(phone)
+
+        data = reparationRegistration(
+            ref_shift= ref_shift,
+            phone_ref= phone_ref,
+        )
+        db.add(data)
+        db.commit()
+        db.refresh(data)
         return status(status="El Telefono ha sido reparado")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/phoneBySearch/{phone_ref}", response_model=list[sp])
-async def someDataPhone(phone_ref:str,db: Session = Depends(get_db)):
+@router.get("/phoneBySearch/{company}/{phone_ref}", response_model=list[sp])
+async def someDataPhone(phone_ref:str, company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p inner join bill as b
-            on p.bill_number = b.bill_number where p.phone_ref = :phone_ref
+            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p 
+            INNER JOIN bill AS b ON p.bill_number = b.bill_number
+            INNER JOIN shift AS s ON b.ref_shift = s.ref_shift
+            INNER JOIN worker AS w ON s.document = w.document
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND p.phone_ref LIKE :phone_ref AND p.repaired = 0;
         """)
 
-        result = db.execute(query, {"phone_ref": phone_ref}).mappings().all()
+        result = db.execute(query, {
+            "company": company,
+            "phone_ref": f"%{phone_ref}%"  # Permite búsquedas parciales
+        }).mappings().all()
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
@@ -81,13 +104,19 @@ async def someDataPhone(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.put("/deliveredPhone/{phone_ref}", response_model=status)
-async def deliveredPhone(phone_ref:str,delivery:delivery,db:Session = Depends(get_db)):
+@router.put("/deliveredPhone/{phone_ref}/{bill_number}", response_model=status)
+async def deliveredPhone(phone_ref:str,delivery:delivery,bill_number:str,db:Session = Depends(get_db)):
     try:
         phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.phone_ref == phone_ref).first()
         phone.delivered = True
         db.commit()
         db.refresh(phone)
+
+        bill = db.query(billRegistrastion).filter(billRegistrastion.bill_number == bill_number).first()
+        bill.due -= delivery.sale
+        bill.payment += delivery.sale
+        db.commit()
+        db.refresh(bill)
 
         data = deliveryRegistration(
             ref_shift = delivery.ref_shift,
@@ -102,7 +131,7 @@ async def deliveredPhone(phone_ref:str,delivery:delivery,db:Session = Depends(ge
         return status(status="El Telefono ha sido Entregado")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 
 @router.get("/phoneBySearchDelivered/{phone_ref}", response_model=list[sp])
