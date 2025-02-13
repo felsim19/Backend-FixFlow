@@ -95,23 +95,47 @@ async def someDataBill(ref_shift:str, db: Session = Depends(get_db)):
     
 
 @router.get("/shiftRepaired/{ref_shift}", response_model=list[bm])
-async def get_shift_repaired(ref_shift: str, db: Session = Depends(get_db)):
+async def get_repaired_phones(ref_shift: str, db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT DISTINCT b.bill_number, b.client_name, b.entry_date
-            FROM reparation AS r
-            INNER JOIN phone AS p ON r.phone_ref = p.phone_ref
-            INNER JOIN bill AS b ON p.bill_number = b.bill_number
+            SELECT b.bill_number, b.client_name, b.entry_date
+            FROM phone AS p
+            INNER JOIN reparation AS r ON p.phone_ref = r.phone_ref
+            INNER JOIN bill AS b ON r.bill_number = b.bill_number
             INNER JOIN shift AS s ON r.ref_shift = s.ref_shift
-            WHERE s.ref_shift = :ref_shift;
+            WHERE s.ref_shift = :ref_shift AND p.repaired = 1;
         """)
 
         result = db.execute(query, {"ref_shift": ref_shift}).mappings().all()
 
         if not result:
-            raise HTTPException(status_code=404, detail="No se encontraron facturas reparadas")
+            raise HTTPException(status_code=404, detail="No hay teléfonos reparados para este turno.")
 
         return result
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.get("/shiftDelivery/{ref_shift}", response_model=list[bm])
+async def get_repaired_phones(ref_shift: str, db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT b.bill_number, b.client_name, b.entry_date
+            FROM phone AS p
+            INNER JOIN reparation AS r ON p.phone_ref = r.phone_ref
+            INNER JOIN bill AS b ON r.bill_number = b.bill_number
+            INNER JOIN shift AS s ON r.ref_shift = s.ref_shift
+            WHERE s.ref_shift = :ref_shift AND p.delivered  = 1;
+        """)
+
+        result = db.execute(query, {"ref_shift": ref_shift}).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay teléfonos reparados para este turno.")
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

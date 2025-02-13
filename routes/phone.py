@@ -39,8 +39,8 @@ async def someDataPhone(company:str,db: Session = Depends(get_db)):
 
 
 
-@router.put("/repairphone/{phone_ref}/{ref_shift}", response_model=status)
-async def repairphone(phone_ref:str, ref_shift:str, db:Session = Depends(get_db)):
+@router.put("/repairphone/{phone_ref}/{ref_shift}/{bill_number}", response_model=status)
+async def repairphone(phone_ref:str, ref_shift:str, bill_number:str, db:Session = Depends(get_db)):
     try:
         phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.phone_ref == phone_ref).first()
         phone.repaired = True
@@ -50,6 +50,7 @@ async def repairphone(phone_ref:str, ref_shift:str, db:Session = Depends(get_db)
         data = reparationRegistration(
             ref_shift= ref_shift,
             phone_ref= phone_ref,
+            bill_number= bill_number
         )
         db.add(data)
         db.commit()
@@ -151,7 +152,23 @@ async def someDataPhone(phone_ref:str,db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
+
+
+@router.get("/getBillNumber/{phone_ref}")
+async def getBillNumber(phone_ref:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT bill_number FROM phone where phone_ref = :phone_ref
+        """)
+
+        result = db.execute(query, {"phone_ref": phone_ref}).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
