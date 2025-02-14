@@ -60,7 +60,7 @@ async def someDataBill(db: Session = Depends(get_db)):
 @router.get("/allShiftCompany/{company}")
 async def get_shift(company:str,db: Session = Depends(get_db)):
         query = text("""
-            SELECT s.ref_shift, s.document, s.date_shift 
+            SELECT s.* 
             FROM shift as s inner join worker as w on s.document = w.document
             inner join company as c on w.company = c.company_user where c.company_user = :company;
         """)
@@ -138,4 +138,29 @@ async def get_repaired_phones(ref_shift: str, db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.get("/searchDateShift/{company}/{date_shift}", response_model=list[someShift])
+async def someDataPhone(date_shift:str,company:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT s.ref_shift, s.document, s.date_shift from shift as s 
+            INNER JOIN worker AS w ON s.document = w.document
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND s.date_shift = :date_shift;
+        """)
+
+        result = db.execute(query, {
+            "company": company,
+            "date_shift": f"{date_shift}"  # Permite búsquedas parciales
+        }).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
