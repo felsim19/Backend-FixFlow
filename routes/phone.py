@@ -39,8 +39,8 @@ async def someDataPhone(company:str,db: Session = Depends(get_db)):
 
 
 
-@router.put("/repairphone/{phone_ref}/{ref_shift}", response_model=status)
-async def repairphone(phone_ref:str, ref_shift:str, db:Session = Depends(get_db)):
+@router.put("/repairphone/{phone_ref}/{ref_shift}/{bill_number}", response_model=status)
+async def repairphone(phone_ref:str, ref_shift:str, bill_number:str, db:Session = Depends(get_db)):
     try:
         phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.phone_ref == phone_ref).first()
         phone.repaired = True
@@ -50,6 +50,7 @@ async def repairphone(phone_ref:str, ref_shift:str, db:Session = Depends(get_db)
         data = reparationRegistration(
             ref_shift= ref_shift,
             phone_ref= phone_ref,
+            bill_number= bill_number
         )
         db.add(data)
         db.commit()
@@ -85,15 +86,21 @@ async def someDataPhone(phone_ref:str, company:str,db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/someDataPhoneDelivered", response_model=list[sp])
-async def someDataPhone(db: Session = Depends(get_db)):
+@router.get("/someDataPhoneDelivered/{company}", response_model=list[sp])
+async def someDataPhone(company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p inner join bill as b
-            on p.bill_number = b.bill_number where p.repaired = 1 and p.delivered = 0
+            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p 
+            INNER JOIN bill AS b ON p.bill_number = b.bill_number
+            INNER JOIN shift AS s ON b.ref_shift = s.ref_shift
+            INNER JOIN worker AS w ON s.document = w.document
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND p.repaired = 1 AND p.delivered = 0;
         """)
 
-        result = db.execute(query).mappings().all()  # Aquí obtenemos las filas como diccionarios
+        result = db.execute(query, {
+            "company": company,  # Permite búsquedas parciales
+            }).mappings().all() #Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
@@ -101,8 +108,7 @@ async def someDataPhone(db: Session = Depends(get_db)):
         return result  # Ya no necesitas convertir manualmente
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+        raise HTTPException(status_code=500, detail=str(e))    
 
 @router.put("/deliveredPhone/{phone_ref}/{bill_number}", response_model=status)
 async def deliveredPhone(phone_ref:str,delivery:delivery,bill_number:str,db:Session = Depends(get_db)):
@@ -134,12 +140,37 @@ async def deliveredPhone(phone_ref:str,delivery:delivery,bill_number:str,db:Sess
 
 
 
-@router.get("/phoneBySearchDelivered/{phone_ref}", response_model=list[sp])
-async def someDataPhone(phone_ref:str,db: Session = Depends(get_db)):
+@router.get("/phoneBySearchDelivered/{company}/{phone_ref}", response_model=list[sp])
+async def someDataPhone(phone_ref:str,company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p inner join bill as b
-            on p.bill_number = b.bill_number where p.phone_ref = :phone_ref
+            SELECT p.phone_ref, p.brand_name, p.device, p.details, b.entry_date FROM phone as p 
+            INNER JOIN bill AS b ON p.bill_number = b.bill_number
+            INNER JOIN shift AS s ON b.ref_shift = s.ref_shift
+            INNER JOIN worker AS w ON s.document = w.document
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND p.phone_ref LIKE :phone_ref AND p.repaired = 1 and p.delivered = 0;
+        """)
+
+        result = db.execute(query, {
+            "company": company,
+            "phone_ref": f"%{phone_ref}%"  # Permite búsquedas parciales
+        }).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/getBillNumber/{phone_ref}")
+async def getBillNumber(phone_ref:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT bill_number FROM phone where phone_ref = :phone_ref
         """)
 
         result = db.execute(query, {"phone_ref": phone_ref}).mappings().all()
@@ -151,7 +182,5 @@ async def someDataPhone(phone_ref:str,db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
 
 
