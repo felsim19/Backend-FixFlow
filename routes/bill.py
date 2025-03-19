@@ -34,7 +34,8 @@ async def createBillwithPhones(company:str, bill: bill, db: Session = Depends(ge
         new_phone = phoneRegistrastion(
             phone_ref=internal_reference(db, bill_number),
             bill_number=newbill.bill_number,
-            brand_name=phone.brand_name,  
+            brand_name=phone.brand_name,
+            brand_id=phone.brand_id,  
             device=phone.device,
             details=phone.details,
             individual_price=phone.individual_price
@@ -183,10 +184,10 @@ async def get_bill_and_phones(bill_number: str, db: Session = Depends(get_db)):
         bill = db.query(billRegistrastion).filter(billRegistrastion.bill_number == bill_number).first()
         if not bill:
             raise HTTPException(status_code=404, detail="Factura no encontrada")
-        phones = db.query(phoneRegistrastion).filter(phoneRegistrastion.bill_number == bill_number).all()
+        phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.bill_number == bill_number).all()
         response = {
             "bill": bill,
-            "phones": phones
+            "phones": phone
         }
         return response
     except Exception as e:
@@ -255,3 +256,25 @@ async def someDataBill(document:str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
+@router.get("/getnumberPhones/{bill_number}")
+async def getPricePhone(bill_number:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT 
+            COUNT(*) AS numberphones,
+            SUM(delivered) AS delivered_count
+            FROM phone
+            WHERE bill_number = :bill_number
+            GROUP BY bill_number;
+        """)
+
+        result = db.execute(query, {"bill_number": bill_number}).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

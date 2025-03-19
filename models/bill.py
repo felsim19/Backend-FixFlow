@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 
 class billRegistrastion(base):  
     __tablename__ = "bill"
-    bill_number = Column(String(20), primary_key=True, nullable=False)
+    bill_number = Column(String(50), primary_key=True, nullable=False)
     total_price = Column(Float(), nullable=False)
     entry_date = Column(Date(), default=func.current_date(), nullable=False)
     due = Column(Float(), nullable=False)

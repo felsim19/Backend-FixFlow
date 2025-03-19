@@ -182,5 +182,22 @@ async def getBillNumber(phone_ref:str,db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/getPricePhone/{phone_ref}")
+async def getPricePhone(phone_ref:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT individual_price FROM phone where phone_ref = :phone_ref
+        """)
+
+        result = db.execute(query, {"phone_ref": phone_ref}).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 

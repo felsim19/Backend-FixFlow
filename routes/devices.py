@@ -8,12 +8,7 @@ from connection.config import get_db
 router = APIRouter()
 
 @router.post("/newDevice", response_model=status)
-async def createBrand(device:device, db:Session=Depends(get_db)):
-    existing_device = db.query(devicesRegistration).filter(devicesRegistration.name == device.name).first()
-    
-    if existing_device:
-        raise HTTPException(status_code=403, detail="Esta dispositivo ya esta registrado")
-    
+async def createDevice(device:device, db:Session=Depends(get_db)):
     new_device = devicesRegistration(
         id_brands=device.id_brands,
         name=device.name

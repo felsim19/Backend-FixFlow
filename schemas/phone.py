@@ -3,6 +3,7 @@ from datetime import date
 
 class phone(bm):
     brand_name:str
+    brand_id:int
     device:str
     details:str
     individual_price:int
@@ -14,3 +15,6 @@ class somePhone(bm):
     device:str
     details:str
     entry_date:date
+
+class pricePhone(bm):
+    individual_price:int
