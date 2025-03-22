@@ -4,10 +4,8 @@ from schemas.phone import phone
 
 class bill(bm):
     total_price:float
-    due:float
     client_name:str
     client_phone:str
-    payment:float
     wname:str
     ref_shift:str
     phones: list[phone]
@@ -28,3 +26,7 @@ class billRepairPhone(bm):
     client_name:str
     payment:float
     bill_number:str
+
+class someDelivery(bm):
+    product:str
+    sale:float

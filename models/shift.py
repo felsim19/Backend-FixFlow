@@ -5,11 +5,12 @@ from sqlalchemy.orm import relationship
 class shiftRegistration(base):
     __tablename__ = "shift"
     ref_shift = Column(String(60), primary_key=True)
-    document = Column(String(30), ForeignKey("worker.document"), nullable=False)
+    id = Column(String(80), ForeignKey("worker.id"), nullable=False)
     start_time = Column(DateTime, nullable=False)
     finish_time = Column(DateTime)
     total_received = Column(Float)
     total_gain = Column(Float)
+    total_outs = Column(Float)
     date_shift = Column(Date(), default=func.current_date(), nullable=False)
 
     tbill = relationship("billRegistrastion", back_populates="tshift")

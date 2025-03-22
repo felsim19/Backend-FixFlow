@@ -18,6 +18,7 @@ class statusworker(bm):
     role:str
     wname:str
     shift:str
+    id:str
 
 class workerlogin(bm):
     document:str

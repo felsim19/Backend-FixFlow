@@ -4,6 +4,7 @@ from pydantic import BaseModel as bm
 class shiftclose(bm):
     total_received:float
     total_gain:float
+    total_outs:float
 
 
 class someShift(bm):

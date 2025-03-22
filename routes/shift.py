@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from models.shift import shiftRegistration
 from connection.config import get_db
 from schemas.shift import shiftclose, someShift
-from schemas.bill import someBill as bm
+from schemas.bill import someBill as bm, someDelivery as sd
+from schemas.outflow import someOutflow as so
 
 router = APIRouter()
 
@@ -30,6 +31,7 @@ async def closeshift(ref_shift:str, shiftclose:shiftclose, db: Session = Depends
         shift.finish_time = now
         shift.total_gain = shiftclose.total_gain
         shift.total_received = shiftclose.total_received
+        shift.total_outs = shiftclose.total_outs
         db.commit()
         db.refresh(shift)
 
@@ -61,7 +63,7 @@ async def someDataBill(db: Session = Depends(get_db)):
 async def get_shift(company:str,db: Session = Depends(get_db)):
         query = text("""
             SELECT s.* 
-            FROM shift as s inner join worker as w on s.document = w.document
+            FROM shift as s inner join worker as w on s.id = w.id
             inner join company as c on w.company = c.company_user where c.company_user = :company;
         """)
 
@@ -140,12 +142,55 @@ async def get_repaired_phones(ref_shift: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
+
+
+@router.get("/shiftSales/{ref_shift}", response_model=list[sd])
+async def shiftSales(ref_shift:str, db: Session = Depends(get_db)):
+    try:
+        query = text("""
+                SELECT d.product, d.sale
+                fROM delivery as d inner join shift as s on 
+                d.ref_shift = s.ref_shift where s.ref_shift = :ref_shift
+        """)
+
+        # Pasamos el parámetro a la consulta con bindparam para evitar SQL Injection
+        result = db.execute(query, {"ref_shift": ref_shift}).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Factura no encontrada")
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/shiftOuts/{ref_shift}", response_model=list[so])
+async def shiftOuts(ref_shift:str, db: Session = Depends(get_db)):
+    try:
+        query = text("""
+                SELECT o.price, o.details
+                fROM outflow as o inner join shift as s on 
+                o.ref_shift = s.ref_shift where s.ref_shift = :ref_shift
+        """)
+
+        # Pasamos el parámetro a la consulta con bindparam para evitar SQL Injection
+        result = db.execute(query, {"ref_shift": ref_shift}).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Factura no encontrada")
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/searchDateShift/{company}/{date_shift}", response_model=list[someShift])
 async def someDataPhone(date_shift:str,company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
             SELECT s.ref_shift, s.document, s.date_shift from shift as s 
-            INNER JOIN worker AS w ON s.document = w.document
+            INNER JOIN worker AS w ON s.id = w.id
             INNER JOIN company AS c ON w.company = c.company_user
             WHERE c.company_user = :company AND s.date_shift = :date_shift;
         """)

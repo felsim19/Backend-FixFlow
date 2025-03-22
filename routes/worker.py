@@ -7,14 +7,14 @@ from models.company import companyRegistration
 from models.worker import workerRegistrastion
 from models.shift import shiftRegistration
 from connection.config import get_db
-from utils import generate_shift_reference
+from utils import generate_shift_reference, get_words_worker
 import bcrypt
 
 router = APIRouter()
 
 
-@router.post("/insertWorker", response_model=status)
-async def insertWorker(worker:worker, db:Session=Depends(get_db)):
+@router.post("/insertWorker/{nameCompany}", response_model=status)
+async def insertWorker(nameCompany:str,worker:worker, db:Session=Depends(get_db)):
     try:
         company = db.query(companyRegistration).filter(companyRegistration.company_user == worker.company).first()
         if not company:
@@ -31,9 +31,11 @@ async def insertWorker(worker:worker, db:Session=Depends(get_db)):
             raise HTTPException(status_code=401, detail="Solo puede haber un gerente por empresa")
         else:
             assigned_role 
-            
+
+        
         encryption = bcrypt.hashpw(worker.password.encode('utf-8'), bcrypt.gensalt())
         new_worker = workerRegistrastion(
+            id = get_words_worker(nameCompany, worker.document),
             wname = worker.wname,
             password = encryption.decode('utf-8'),
             document = worker.document,
@@ -68,7 +70,7 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
     try:
         # Buscar al trabajador en la base de datos
         db_worker = db.query(workerRegistrastion).filter(
-            workerRegistrastion.document == worker_user.document,
+            workerRegistrastion.id == get_words_worker(company_id, worker_user.document),
             workerRegistrastion.company == company_id
         ).first()
 
@@ -83,7 +85,7 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         # Registrar la hora de inicio del turno
         now = datetime.now()
         new_shift = shiftRegistration(
-            document=db_worker.document,
+            id=get_words_worker(company_id, worker_user.document),
             start_time=now,
             ref_shift= generate_shift_reference(db)
         )
@@ -95,7 +97,8 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
             "status": "Inicio de sesión exitoso",
             "role": db_worker.wrole,
             "wname": db_worker.wname,
-            "shift": new_shift.ref_shift
+            "shift": new_shift.ref_shift,
+            "id": db_worker.id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

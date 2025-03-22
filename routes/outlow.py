@@ -21,3 +21,5 @@ async def insertCompany(outflow:outflow,db:Session=Depends(get_db)):
         return status(status="La venta ha sido registrada correctamente")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+

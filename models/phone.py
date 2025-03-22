@@ -1,4 +1,4 @@
-from sqlalchemy import Column,String,ForeignKey,Integer,Boolean,Date
+from sqlalchemy import Column,String,ForeignKey,Integer,Boolean,Date,Float
 from connection.config import base
 from sqlalchemy.orm import relationship
 
@@ -11,6 +11,8 @@ class phoneRegistrastion(base):
     device = Column(String(50), nullable=False)
     details = Column(String(250), nullable=False)
     individual_price = Column(Integer, nullable=False)
+    due = Column(Float(), nullable=False)
+    payment = Column(Float())
     repaired = Column(Boolean(),default=False)
     delivered = Column(Boolean(),default=False)
     date_delivered = Column(Date())

@@ -4,6 +4,8 @@ from datetime import date
 class phone(bm):
     brand_name:str
     brand_id:int
+    due:float
+    payment:float
     device:str
     details:str
     individual_price:int

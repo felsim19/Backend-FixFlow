@@ -60,3 +60,6 @@ def internal_reference (db: Session, bill_number:str):
     references_int = f"{bill_number}-{contador}"    
     
     return references_int
+
+def get_words_worker(company, document):
+    return company + "_" + document
