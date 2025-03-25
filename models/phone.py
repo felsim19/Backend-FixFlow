@@ -13,6 +13,7 @@ class phoneRegistrastion(base):
     individual_price = Column(Integer, nullable=False)
     due = Column(Float(), nullable=False)
     payment = Column(Float())
+    final_price = Column(Integer)
     repaired = Column(Boolean(),default=False)
     delivered = Column(Boolean(),default=False)
     date_delivered = Column(Date())

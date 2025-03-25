@@ -111,14 +111,18 @@ async def someDataPhone(company:str,db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))    
 
-@router.put("/deliveredPhone/{phone_ref}", response_model=status)
-async def deliveredPhone(phone_ref:str,delivery:delivery,db:Session = Depends(get_db)):
+@router.put("/deliveredPhone/{phone_ref}/{bill_number}", response_model=status)
+async def deliveredPhone(phone_ref:str,bill_number:str,delivery:delivery,db:Session = Depends(get_db)):
     try:
         now = datetime.now()
         phone = db.query(phoneRegistrastion).filter(phoneRegistrastion.phone_ref == phone_ref).first()
         phone.delivered = True
-        phone.due -= delivery.sale
-        phone.payment += delivery.sale
+        phone.due = 0
+        phone.final_price = phone.payment + delivery.sale
+        if (phone.final_price > phone.individual_price):
+            execedent = phone.final_price - phone.individual_price
+            bill = db.query(billRegistrastion).filter(billRegistrastion.bill_number == bill_number).first()
+            bill.total_price += execedent
         phone.date_delivered = now
         db.commit()
         db.refresh(phone)
