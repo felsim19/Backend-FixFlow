@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.shift import shiftRegistration
+from models.company import companyRegistration
 from connection.config import get_db
 from schemas.shift import shiftclose, someShift
 from schemas.bill import someBill as bm, someDelivery as sd
@@ -22,8 +23,8 @@ async def get_Brands(ref_shift:str ,db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.put("/closeshift/{ref_shift}")
-async def closeshift(ref_shift:str, shiftclose:shiftclose, db: Session = Depends(get_db)):
+@router.put("/closeshift/{ref_shift}/{logedCompany}")
+async def closeshift(ref_shift:str,logedCompany:str, shiftclose:shiftclose, db: Session = Depends(get_db)):
     try:
         shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift ).first()
         # Registrar la salida de inicio del turno
@@ -34,6 +35,14 @@ async def closeshift(ref_shift:str, shiftclose:shiftclose, db: Session = Depends
         shift.total_outs = shiftclose.total_outs
         db.commit()
         db.refresh(shift)
+
+        company = db.query(companyRegistration).filter(companyRegistration.company_user == logedCompany).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Compañia no existe")
+        company
+        company.vault = shiftclose.vault
+        db.commit() 
+        db.refresh(company) 
 
         return shift
     except Exception as e:
