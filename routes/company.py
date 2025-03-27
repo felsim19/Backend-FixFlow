@@ -65,7 +65,7 @@ async def putCompanyImage(loggedCompany:str, file: UploadFile = File(...) ,db:Se
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 @router.get("/allcompany/{loggedCompany}", response_model=status)
 async def getImageCompany(loggedCompany: str, db: Session = Depends(get_db)):
@@ -78,6 +78,18 @@ async def getImageCompany(loggedCompany: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Company not found")
 
         return status(status=company.url_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.get("/company/{company_id}/vault/baseColor")
+async def get_company_vault(company_id:str, db:Session=Depends(get_db)): 
+    try:
+        company = db.query(companyRegistration).filter(companyRegistration.company_user == company_id).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Compañia no encontrada")
+        return {"vault" : company.vault, 
+                "baseColor" : company.base_color}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
