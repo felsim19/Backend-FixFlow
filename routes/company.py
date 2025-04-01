@@ -210,8 +210,6 @@ async def verify_pin(verification:verificationPin, db: Session = Depends(get_db)
 @router.put("/confirmPassword", response_model=status)
 async def insertCompany(changes:NewPassword,db:Session=Depends(get_db)):
     try:
-        if not is_valid_mail(changes.Email):
-            raise HTTPException(status_code=401,detail="Correo no valido")
         company = db.query(companyRegistration).filter(companyRegistration.mail==changes.Email).first()
         encriptacion = bcrypt.hashpw(changes.password.encode("utf-8"), bcrypt.gensalt())
         company.password = encriptacion.decode('utf-8')
