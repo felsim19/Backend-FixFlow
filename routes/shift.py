@@ -39,8 +39,7 @@ async def closeshift(ref_shift:str,logedCompany:str, shiftclose:shiftclose, db: 
         company = db.query(companyRegistration).filter(companyRegistration.company_user == logedCompany).first()
         if not company:
             raise HTTPException(status_code=404, detail="Compañia no existe")
-        company
-        company.vault = shiftclose.vault
+        company.vault += shiftclose.vault
         db.commit() 
         db.refresh(company) 
 

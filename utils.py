@@ -5,6 +5,7 @@ from models.shift import shiftRegistration
 from models.bill import billRegistrastion
 from models.phone import phoneRegistrastion
 import re
+import random
 
 from models.worker import workerRegistrastion
 
@@ -63,3 +64,6 @@ def internal_reference (db: Session, bill_number:str):
 
 def get_words_worker(company, document):
     return company + "_" + document
+
+def generate_pin(digit:6):
+    return random.randint(10**(digit-1), (10**digit)-1)

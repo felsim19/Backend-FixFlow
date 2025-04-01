@@ -49,7 +49,7 @@ async def insertWorker(nameCompany:str,worker:worker, db:Session=Depends(get_db)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/company/{company_id}/count/")
+@router.get("/company/{company_id}/count")
 async def get_worker_count(company_id:str, db:Session=Depends(get_db)): 
     try:
         count = db.query(workerRegistrastion).filter(workerRegistrastion.company == company_id).count()

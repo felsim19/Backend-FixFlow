@@ -17,4 +17,5 @@ class shiftRegistration(base):
     tworker = relationship("workerRegistrastion", back_populates="tshift")
     tdelivery = relationship("deliveryRegistration", back_populates="tshift")
     toutflow = relationship("outflowRegistration", back_populates="tshift")
+    toutflowVault = relationship("outVaultRegistration", back_populates="tshift")
     treparation = relationship("reparationRegistration", back_populates="tshift")

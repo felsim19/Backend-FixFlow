@@ -1,4 +1,3 @@
-import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,10 +14,8 @@ from models.delivery import base
 from models.outflow import base
 from models.reparation import base
 
-
 app = FastAPI()
 
-logging.basicConfig(level=logging.DEBUG)
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,5 +39,3 @@ app.include_router(phone.router)
 app.include_router(reparation.router)
 
 
-
-app.mount("/static", StaticFiles(directory="companyImg"), name="static")

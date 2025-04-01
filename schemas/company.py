@@ -15,3 +15,14 @@ class company(bm):
 class companyLogin(bm):
     identifier:str
     password:str
+
+class verificationEmail(bm):
+    Email:str
+
+class verificationPin(bm):
+    Email:str
+    code:int
+
+class NewPassword(bm):
+    Email:str
+    password:str

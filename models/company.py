@@ -11,4 +11,5 @@ class companyRegistration(base):
     base_color = Column(String(50), default="#d84b17")
     
     tworker = relationship("workerRegistrastion", back_populates="tcompany")
+    tpassword = relationship("PasswordRecovery", back_populates="tcompany")
     tbrand = relationship("brandsRegistration", back_populates="tcompany")
