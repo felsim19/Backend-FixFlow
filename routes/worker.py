@@ -31,9 +31,10 @@ async def insertWorker(nameCompany:str,worker:worker, db:Session=Depends(get_db)
             raise HTTPException(status_code=401, detail="Solo puede haber un gerente por empresa")
         else:
             assigned_role 
-
+            
         
         encryption = bcrypt.hashpw(worker.password.encode('utf-8'), bcrypt.gensalt())
+        
         new_worker = workerRegistrastion(
             id = get_words_worker(nameCompany, worker.document),
             wname = worker.wname,
@@ -42,6 +43,11 @@ async def insertWorker(nameCompany:str,worker:worker, db:Session=Depends(get_db)
             company = worker.company,
             wrole = assigned_role
         )
+        
+        id = db.query(workerRegistrastion).filter(workerRegistrastion.id == new_worker.id).first()
+        if id:  
+            raise HTTPException(status_code=401, detail="El documento ya existe.")
+        
         db.add(new_worker)
         db.commit()
         db.refresh(new_worker)
