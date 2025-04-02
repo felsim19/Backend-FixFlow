@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from routes import company, worker, bill, brands, devices, phone, delivery, outlow, shift, reparation
 from connection.config import engine
