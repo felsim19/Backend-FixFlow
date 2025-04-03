@@ -1,0 +1,36 @@
+# Archivos de entorno
+.env
+.env.*
+!.env.example
+
+# Directorios de entornos virtuales
+venv/
+env/
+.venv/
+
+# Archivos de Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos de desarrollo
+.idea/
+.vscode/
+.DS_Store
+
+# Archivos de base de datos local
+*.sqlite3
+*.db
+*.sql
+*.mdb
+*.myd
+*.myi
+*.ibd
+*.frm
+*.dump
+*.log
+/bin/mysql/
+/data/
+/mysql-data/
+/docker/mysql/data/
+/docker/mariadb/data/
