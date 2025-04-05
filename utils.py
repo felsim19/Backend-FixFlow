@@ -1,13 +1,16 @@
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
-from datetime import datetime
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+from fastapi import Request
+from datetime import datetime, timedelta
 from models.shift import shiftRegistration
 from models.bill import billRegistrastion
 from models.phone import phoneRegistrastion
 import re
 import random
+import os
 
-from models.worker import workerRegistrastion
 
 regex_mail = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
@@ -67,3 +70,11 @@ def get_words_worker(company, document):
 
 def generate_pin(digit:6):
     return random.randint(10**(digit-1), (10**digit)-1)
+
+
+def create_verification_token(email: str):
+    expire_minutes = int(os.getenv("VERIFY_TOKEN_EXPIRE", "1440"))  # Conversión a int
+    expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
+    to_encode = {"sub": email, "exp": expire}
+    encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM"))
+    return encoded_jwt

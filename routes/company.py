@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+from jose import jwt, JWTError
+from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from sqlalchemy.orm import Session
@@ -8,7 +10,7 @@ from models.company import companyRegistration
 from models.VaultOut import outVaultRegistration
 from models.recoveryPassword import PasswordRecovery
 from connection.config import get_db
-from utils import is_valid_mail, generate_pin
+from utils import is_valid_mail, generate_pin, create_verification_token
 from dotenv import load_dotenv
 import bcrypt
 import os
@@ -32,13 +34,16 @@ conf = ConnectionConfig(
 router = APIRouter()
 
 @router.post("/insertCompany", response_model=status)
-async def insertCompany(company:company,db:Session=Depends(get_db)):
+async def insertCompany(company: company, db: Session = Depends(get_db)):
     try:
         if not is_valid_mail(company.mail):
-            raise HTTPException(status_code=401,detail="Correo no valido")
-        name_company = db.query(companyRegistration).filter(companyRegistration.company_user==company.company_user).first()
+            raise HTTPException(status_code=401, detail="Correo no válido")
+            
+        name_company = db.query(companyRegistration).filter(
+            companyRegistration.company_user == company.company_user).first()
         if name_company:
-            raise HTTPException(status_code=401,detail="compañia ya existente")
+            raise HTTPException(status_code=401, detail="Compañía ya existente")
+
         encriptacion = bcrypt.hashpw(company.password.encode("utf-8"), bcrypt.gensalt())
         data = companyRegistration(
             company_user=company.company_user,
@@ -48,9 +53,64 @@ async def insertCompany(company:company,db:Session=Depends(get_db)):
         db.add(data)
         db.commit()
         db.refresh(data)
-        return status(status="La compañia a sido registrada correctamente")
+
+        # Crear token de verificación
+        verification_token = create_verification_token(company.mail)
+        
+        # URL de verificación (usa tu dominio real en producción)
+        verification_url = f"http://localhost:8000/api/verify-email?token={verification_token}&redirect_to=http://localhost:5173/loginCompany"
+        
+        # Enviar email
+        msg = MessageSchema(
+            subject="Verifica tu email - Fixflow",
+            recipients=[company.mail],
+            body=f"""
+            <h1>Bienvenido a Fixflow</h1>
+            <p>Por favor verifica tu email haciendo clic en el siguiente enlace:</p>
+            <a href="{verification_url}">Verificar email</a>
+            <p>Este enlace expirará en 24 horas.</p>
+            """,
+            subtype="html"
+        )
+        
+        fm = FastMail(conf)
+        await fm.send_message(msg)
+        
+        return status(status="La compañía ha sido registrada. Por favor verifica tu email.")
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/verify-email")
+async def verify_email(token: str, redirect_to: str, db: Session = Depends(get_db)):
+    try:
+        # Verificar el token
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+        email = payload.get("sub")
+        if not email:
+            return RedirectResponse(url=f"{redirect_to}?error=invalid_token")
+        
+        # Buscar la compañía
+        company = db.query(companyRegistration).filter(
+            companyRegistration.mail == email,
+            companyRegistration.verifiedMail == 0  # Cambiar a is_verified si usas ese nombre
+        ).first()
+        
+        if not company:
+            return RedirectResponse(url=f"{redirect_to}?error=already_verified_or_not_found")
+        
+        # Actualizar el estado de verificación
+        company.verifiedMail = 1  # O company.is_verified = True
+        db.commit()
+        
+        # Redirigir al frontend con éxito
+        return RedirectResponse(url=f"{redirect_to}?verified=success")
+    
+    except JWTError:
+        return RedirectResponse(url=f"{redirect_to}?error=invalid_token")
+    except Exception as e:
+        print(f"Error en verificación: {str(e)}")
+        return RedirectResponse(url=f"{redirect_to}?error=server_error")
 
 @router.post("/loginCompany", response_model=statusName)
 async def loginCompany(company_user:companyLogin, db:Session=Depends(get_db)):
@@ -60,6 +120,8 @@ async def loginCompany(company_user:companyLogin, db:Session=Depends(get_db)):
             (companyRegistration.mail == company_user.identifier)).first()
         if db_company is None:
             raise HTTPException(status_code=400, detail="Compañia no existe")
+        if db_company.verifiedMail == 0:
+            raise HTTPException(status_code=403, detail="Por favor verifica tu email primero")
         if not bcrypt.checkpw(company_user.password.encode('utf-8'), db_company.password.encode('utf-8')):
             raise HTTPException(status_code=401, detail="Contraseña Incorrecta")
         return {
