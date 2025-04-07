@@ -285,5 +285,56 @@ async def insertCompany(changes:NewPassword,db:Session=Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/resend-confirmation-code", response_model=status)
+async def resend_confirmation_code(emailUser: verificationEmail, db: Session = Depends(get_db)):
+    try:
+        db_company = db.query(companyRegistration).filter(companyRegistration.mail == emailUser.Email).first()
+        if db_company is None:
+            raise HTTPException(status_code=400, detail="Compañia no existe")
+        
+        # Verificar si ya existe un PIN activo
+        existing_recovery = db.query(PasswordRecovery).filter(
+            PasswordRecovery.company == db_company.company_user
+        ).first()
+        
+        if existing_recovery and datetime.now() < existing_recovery.expires_at:
+            # Reenviar el mismo PIN si aún es válido
+            pin = existing_recovery.pin
+            expiration_time = existing_recovery.expires_at
+        else:
+            # Generar nuevo PIN si no existe o ha expirado
+            pin = generate_pin(6)
+            expiration_time = datetime.now() + timedelta(minutes=15)
+            
+            if existing_recovery:
+                # Actualizar registro existente
+                existing_recovery.pin = pin
+                existing_recovery.expires_at = expiration_time
+            else:
+                # Crear nuevo registro
+                data = PasswordRecovery(
+                    company=db_company.company_user,
+                    pin=pin,
+                    expires_at=expiration_time
+                )
+                db.add(data)
+        
+        db.commit()
+
+        # Enviar el correo
+        msg = MessageSchema(
+            subject="Confrimacion del Correo - Nuevo código",
+            recipients=[emailUser.Email],
+            body=f"Su nuevo PIN es: {pin} \nEste PIN es válido por 15 minutos",
+            subtype="html"
+        )
+        
+        fm = FastMail(conf)
+        await fm.send_message(msg)
+        
+        return status(status="Se ha reenviado el código de confirmación a su correo")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 

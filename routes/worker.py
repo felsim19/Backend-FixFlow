@@ -41,7 +41,8 @@ async def insertWorker(nameCompany:str,worker:worker, db:Session=Depends(get_db)
             password = encryption.decode('utf-8'),
             document = worker.document,
             company = worker.company,
-            wrole = assigned_role
+            wrole = assigned_role,
+            active = True
         )
         
         id = db.query(workerRegistrastion).filter(workerRegistrastion.id == new_worker.id).first()
@@ -83,6 +84,9 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         # Validar que el trabajador exista
         if db_worker is None:
             raise HTTPException(status_code=400, detail="Nombre de usuario no existe")
+        
+        if db_worker.active == False:
+            raise HTTPException(status_code=401, detail="Trabajador inactivo")
 
         # Validar la contraseña
         if not bcrypt.checkpw(worker_user.password.encode('utf-8'), db_worker.password.encode('utf-8')):
@@ -109,7 +113,7 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/deleteCollaborators/{company_id}/{document}", response_model=status)
+@router.put("/inactiveCollaborators/{company_id}/{document}", response_model=status)
 async def delete_collaborators(company_id:str,document:str, db:Session = Depends(get_db)):
     try:
         worker = db.query(workerRegistrastion).filter(
@@ -120,8 +124,28 @@ async def delete_collaborators(company_id:str,document:str, db:Session = Depends
         if worker is None:
                 raise HTTPException(status_code=404,detail="Trabajador no encontrado")
             
-        db.delete(worker)
+        worker.active = False
         db.commit()
-        return status(status="Trabajador Eliminado Recientemente")  
+        db.refresh(worker)
+        return status(status="trabajador inactivado exitosamente")  
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/reactiveCollaborators/{company_id}/{document}", response_model=status)
+async def delete_collaborators(company_id:str,document:str, db:Session = Depends(get_db)):
+    try:
+        worker = db.query(workerRegistrastion).filter(
+            workerRegistrastion.company == company_id,
+            workerRegistrastion.document == document
+            ).first()
+        
+        if worker is None:
+                raise HTTPException(status_code=404,detail="Trabajador No Encontrado")
+            
+        worker.active = True
+        db.commit()
+        db.refresh(worker)
+        return status(status="trabajador Reactivado Exitosamente")  
+    except Exception as e:  
         raise HTTPException(status_code=500, detail=str(e))
