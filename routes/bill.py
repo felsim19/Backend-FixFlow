@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from schemas.company import status
-from schemas.bill import bill,someBill as sb, someBillRepair as sbr, billRepairPhone as brp
+from schemas.bill import bill,someBill as sb, someBillRepair as sbr, billRepairPhone as brp, statusBill
 from connection.config import get_db
 from models.bill import billRegistrastion
 from models.phone import phoneRegistrastion
@@ -10,41 +10,46 @@ from utils import generate_bill_number, internal_reference
 
 router = APIRouter()
 
-@router.post("/createBillwithPhones/{company}", response_model=status)
+@router.post("/createBillwithPhones/{company}", response_model=statusBill)
 async def createBillwithPhones(company:str, bill: bill, db: Session = Depends(get_db)):
-    if len(bill.phones) > 5:
-        raise HTTPException(status_code=400, detail="No se puede registrar más de 5 dispositivos") 
-    
-    bill_number = generate_bill_number(db, company)
-    newbill = billRegistrastion(
-        bill_number=bill_number,
-        total_price=bill.total_price,
-        client_name=bill.client_name,
-        client_phone=bill.client_phone,
-        wname=bill.wname,
-        ref_shift = bill.ref_shift
-    )
-    db.add(newbill)
-    db.commit()
-    db.refresh(newbill)
-    
-    for phone in bill.phones:
-        new_phone = phoneRegistrastion(
-            phone_ref=internal_reference(db, bill_number),
-            bill_number=newbill.bill_number,
-            brand_name=phone.brand_name,
-            brand_id=phone.brand_id,
-            due=phone.due,
-            payment=phone.payment,
-            device=phone.device,
-            details=phone.details,
-            individual_price=phone.individual_price
+    try:
+        if len(bill.phones) > 5:
+            raise HTTPException(status_code=400, detail="No se puede registrar más de 5 dispositivos") 
+            
+        bill_number = generate_bill_number(db, company)
+        newbill = billRegistrastion(
+            bill_number=bill_number,
+            total_price=bill.total_price,
+            client_name=bill.client_name,
+            client_phone=bill.client_phone,
+            wname=bill.wname,
+            ref_shift = bill.ref_shift
         )
-        db.add(new_phone)
+        db.add(newbill)
         db.commit()
-        db.refresh(new_phone)
+        db.refresh(newbill)
         
-    return status(status="Factura y dispositivos registrados exitosamente")  
+        for phone in bill.phones:
+            new_phone = phoneRegistrastion(
+                phone_ref=internal_reference(db, bill_number),
+                bill_number=newbill.bill_number,
+                brand_name=phone.brand_name,
+                brand_id=phone.brand_id,
+                due=phone.due,
+                payment=phone.payment,
+                device=phone.device,
+                details=phone.details,
+                individual_price=phone.individual_price
+            )
+            db.add(new_phone)
+            db.commit()
+            db.refresh(new_phone)
+            return {
+                "status": "Factura y dispositivos registrados exitosamente",
+                "bill_number": newbill.bill_number
+            }  
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/someDataOfBill/{company}", response_model=list[sb])
 async def someDataBill(company:str,db: Session = Depends(get_db)):

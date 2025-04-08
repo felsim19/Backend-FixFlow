@@ -30,3 +30,7 @@ class billRepairPhone(bm):
 class someDelivery(bm):
     product:str
     sale:float
+
+class statusBill(bm):
+    status:str
+    bill_number:str
