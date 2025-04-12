@@ -7,8 +7,8 @@ class companyRegistration(base):
     company_user = Column(String(60), primary_key=True)
     mail = Column(String(200), nullable=False, unique=True)
     password = Column(String(80), nullable=False)
-    vault = Column(Float, default=0)
     base_color = Column(String(50), default="#d84b17")
+    number = Column(String(10), nullable=False)
     verifiedMail = Column(Boolean, default=False) 
     
     tworker = relationship("workerRegistrastion", back_populates="tcompany")
