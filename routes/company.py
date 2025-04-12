@@ -127,8 +127,7 @@ async def loginCompany(company_user:companyLogin, db:Session=Depends(get_db)):
             raise HTTPException(status_code=401, detail="Contraseña Incorrecta")
         return {
             "status" : "Inicio de sesion exitoso",
-            "name" : db_company.company_user,
-            "number" : db_company.number
+            "name" : db_company.company_user
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -149,17 +148,6 @@ async def getImageCompany(loggedCompany: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/company/{loggedCompany}/vault/baseColor")
-async def get_company_vault(loggedCompany:str, db:Session=Depends(get_db)): 
-    try:
-        company = db.query(companyRegistration).filter(companyRegistration.company_user == loggedCompany).first()
-        if not company:
-            raise HTTPException(status_code=404, detail="Compañia no encontrada")
-        return {"vault" : company.vault, 
-                "baseColor" : company.base_color}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
 @router.get("/company/{loggedCompany}/baseColor")
 async def get_company_color(loggedCompany:str, db:Session=Depends(get_db)):
     try:
@@ -167,6 +155,17 @@ async def get_company_color(loggedCompany:str, db:Session=Depends(get_db)):
         if not company:
             raise HTTPException(status_code=404, detail="Compañia no encontrada")
         return {"baseColor" : company.base_color}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/company/{loggedCompany}/number")
+async def get_company_number(loggedCompany:str, db:Session=Depends(get_db)):
+    try:
+        company = db.query(companyRegistration).filter(companyRegistration.company_user == loggedCompany).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Compañia no encontrada")
+        return {"number" : company.number}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

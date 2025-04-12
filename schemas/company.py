@@ -6,7 +6,6 @@ class status(bm):
 class statusName(bm):
     status:str
     name:str
-    number:str
 
 class company(bm):
     company_user:str
