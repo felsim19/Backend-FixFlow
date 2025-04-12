@@ -217,3 +217,26 @@ async def someDataPhone(date_shift:str,company:str,db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/searchWname/{document}}", response_model=list[someShift])
+async def someDataPhone(document:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT s.ref_shift, s.document, s.date_shift from shift as s 
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE w.document = :document;
+        """)
+
+        result = db.execute(query, {
+            "document": document,
+        }).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+

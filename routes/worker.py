@@ -149,3 +149,16 @@ async def delete_collaborators(company_id:str,document:str, db:Session = Depends
         return status(status="trabajador Reactivado Exitosamente")  
     except Exception as e:  
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/worker/{workerDocument}/{company}")
+async def get_worker_wname(workerDocument:str, company:str, db:Session=Depends(get_db)): 
+    try:
+        worker = db.query(workerRegistrastion).filter(workerRegistrastion.document == workerDocument, 
+                                                     workerRegistrastion.company == company).first()
+        
+        if worker is None:
+            raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+            
+        return {"wname" : worker.wname }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -43,11 +43,11 @@ async def createBillwithPhones(company:str, bill: bill, db: Session = Depends(ge
             )
             db.add(new_phone)
             db.commit()
-            db.refresh(new_phone)
-            return {
-                "status": "Factura y dispositivos registrados exitosamente",
-                "bill_number": newbill.bill_number
-            }  
+        db.refresh(new_phone)
+        return {
+            "status": "Factura y dispositivos registrados exitosamente",
+            "bill_number": newbill.bill_number
+        }  
     except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
