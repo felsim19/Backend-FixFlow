@@ -1,14 +1,12 @@
-from sqlalchemy import String, Column, Float, Boolean
+from sqlalchemy import Column,DateTime,ForeignKey,String, Integer
 from connection.config import base
 from sqlalchemy.orm import relationship
 
-class companyRegistration(base):
-    __tablename__ = "company"
-    company_user = Column(String(60), primary_key=True)
-    mail = Column(String(200), nullable=False, unique=True)
-    password = Column(String(80), nullable=False)
-    base_color = Column(String(50), default="#d84b17")
-    number = Column(String(10), nullable=False)
-    tworker = relationship("workerRegistrastion", back_populates="tcompany")
-    tpassword = relationship("PasswordRecovery", back_populates="tcompany")
-    tbrand = relationship("brandsRegistration", back_populates="tcompany")
+class PasswordRecovery(base):
+    __tablename__ = "password_recovery"
+    id = Column(Integer, primary_key=True, index=True)
+    company = Column(String(80), ForeignKey("company.company_user"), nullable=False)
+    pin = Column(Integer, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+    tcompany = relationship("companyRegistration", back_populates="tpassword")

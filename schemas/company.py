@@ -6,10 +6,12 @@ class status(bm):
 class statusName(bm):
     status:str
     name:str
+    number:str
 
 class company(bm):
     company_user:str
     mail:str
+    number:str
     password:str
 
 class companyLogin(bm):

@@ -48,6 +48,7 @@ async def insertCompany(company: company, db: Session = Depends(get_db)):
         data = companyRegistration(
             company_user=company.company_user,
             mail=company.mail,
+            number=company.number,
             password=encriptacion.decode('utf-8')
         )
         db.add(data)
@@ -126,7 +127,8 @@ async def loginCompany(company_user:companyLogin, db:Session=Depends(get_db)):
             raise HTTPException(status_code=401, detail="Contraseña Incorrecta")
         return {
             "status" : "Inicio de sesion exitoso",
-            "name" : db_company.company_user
+            "name" : db_company.company_user,
+            "number" : db_company.number
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
