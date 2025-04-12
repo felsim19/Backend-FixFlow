@@ -12,6 +12,7 @@ from models.bill import base
 from models.delivery import base
 from models.outflow import base
 from models.reparation import base
+from models.premises import base
 
 app = FastAPI()
 
