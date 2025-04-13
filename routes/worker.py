@@ -92,12 +92,28 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         if not bcrypt.checkpw(worker_user.password.encode('utf-8'), db_worker.password.encode('utf-8')):
             raise HTTPException(status_code=401, detail="Contraseña Incorrecta")
 
+        # Verificar si es el primer gerente
+        workers_count = db.query(workerRegistrastion).filter(
+            workerRegistrastion.company == company_id
+        ).count()
+
+        # Si es el primer trabajador (gerente) y no hay local seleccionado, no crear turno
+        if workers_count == 1 and db_worker.wrole == "Gerente":
+            return {
+                "status": "Inicio de sesión exitoso",
+                "role": db_worker.wrole,
+                "wname": db_worker.wname,
+                "shift": None,
+                "id": db_worker.id,
+                "is_first_manager": True
+            }
+
         # Registrar la hora de inicio del turno
         now = datetime.now()
         new_shift = shiftRegistration(
             id=get_words_worker(company_id, worker_user.document),
             start_time=now,
-            ref_shift= generate_shift_reference(db)
+            ref_shift=generate_shift_reference(db)
         )
         db.add(new_shift)
         db.commit()
@@ -108,7 +124,8 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
             "role": db_worker.wrole,
             "wname": db_worker.wname,
             "shift": new_shift.ref_shift,
-            "id": db_worker.id
+            "id": db_worker.id,
+            "is_first_manager": False
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -123,6 +140,9 @@ async def delete_collaborators(company_id:str,document:str, db:Session = Depends
         
         if worker is None:
                 raise HTTPException(status_code=404,detail="Trabajador no encontrado")
+        
+        if worker.wrole == "Gerente":
+            raise HTTPException(status_code=401, detail="No se puede inactivar el gerente de la empresa")
             
         worker.active = False
         db.commit()
