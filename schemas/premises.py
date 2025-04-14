@@ -12,3 +12,12 @@ class premises(bm):
     password:str
     company:str
     
+class somePremises(bm):
+    ref_premises:int
+    name:str
+    address:str
+    
+class loginPremises(bm):
+    premise_id:int
+    password:str
+
