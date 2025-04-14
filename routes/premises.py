@@ -3,7 +3,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from connection.config import get_db
 from models.premises import premisesRegistration
+from models.VaultOut import outVaultRegistration
 from models.company import companyRegistration
+from schemas.Vault import vault
 from models.shift import shiftRegistration
 from schemas.company import status
 from schemas.premises import premises, somePremises as sp, loginPremises as lp
@@ -16,6 +18,16 @@ async def get_worker_count(company_id:str, db:Session=Depends(get_db)):
     try:
         count = db.query(premisesRegistration).filter(premisesRegistration.company == company_id).count()
         return {"count" : count }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/premises/{selected_premises_id}")
+async def get_company_color(selected_premises_id:int, db:Session=Depends(get_db)):
+    try:
+        premise  = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == selected_premises_id).first()
+        if not premise:
+            raise HTTPException(status_code=404, detail="local no encontrado")
+        return {"Vault" : premise.vault}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -88,5 +100,28 @@ async def loginPremises(login:lp, db:Session=Depends(get_db)):
             db.commit()
             db.refresh(shift)
         return status(status="Login exitoso")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/OutFlowVault", response_model=status)
+async def OutFlowVault(changes:vault, db:Session=Depends(get_db)):
+    try:
+        premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == changes.ref_premises).first()
+        if not premise:
+            raise HTTPException(status_code=404, detail="Local no encontrado")
+        if changes.quantity > premise.vault:
+            raise HTTPException(status_code=401, detail="No hay suficiente dinero en caja")
+        premise.vault -= changes.quantity
+        db.commit()
+        db.refresh(premise)
+
+        data = outVaultRegistration(
+            ref_shift = changes.ref_shift,
+            quantity = changes.quantity
+        )
+        db.add(data)
+        db.commit() 
+        db.refresh(data)
+        return status(status="Cambio de caja registrado correctamente")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -5,9 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from sqlalchemy.orm import Session
 from schemas.company import company, status, statusName, companyLogin, verificationEmail, verificationPin, NewPassword
-from schemas.Vault import vault
 from models.company import companyRegistration
-from models.VaultOut import outVaultRegistration
 from models.recoveryPassword import PasswordRecovery
 from connection.config import get_db
 from utils import is_valid_mail, generate_pin, create_verification_token
@@ -196,30 +194,7 @@ async def putNumberCompany(loggedCompany:str,newnumber:str, db:Session=Depends(g
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/OutFlowVault/{loggedcompany}", response_model=status)
-async def OutFlowVault(loggedcompany:str, changes:vault, db:Session=Depends(get_db)):
-    try:
-        company = db.query(companyRegistration).filter(companyRegistration.company_user == loggedcompany).first()
-        if not company:
-            raise HTTPException(status_code=404, detail="Compañia no encontrada")
-        if changes.quantity > company.vault:
-            raise HTTPException(status_code=401, detail="No hay suficiente dinero en caja")
-        company.vault -= changes.quantity
-        db.commit()
-        db.refresh(company)
-
-        data = outVaultRegistration(
-            ref_shift = changes.ref_shift,
-            quantity = changes.quantity
-        )
-        db.add(data)
-        db.commit() 
-        db.refresh(data)
-        return status(status="Cambio de caja registrado correctamente")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     
-
 @router.post("/passwordRecovery", response_model=status)
 async def forggetPassword(emailUser: verificationEmail, db: Session = Depends(get_db)):
     try:
