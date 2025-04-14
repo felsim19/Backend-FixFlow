@@ -1,4 +1,4 @@
-from sqlalchemy import String, Column, Boolean
+from sqlalchemy import String, Column, Boolean, Integer
 from connection.config import base
 from sqlalchemy.orm import relationship
 
@@ -10,6 +10,8 @@ class companyRegistration(base):
     base_color = Column(String(50), default="#d84b17")
     number = Column(String(10), nullable=False)
     verifiedMail = Column(Boolean(), default=False) 
+    nit = Column(String(20))
+    quantity_premises = Column(Integer(), default=3)
     
     tworker = relationship("workerRegistrastion", back_populates="tcompany")
     tpassword = relationship("PasswordRecovery", back_populates="tcompany")

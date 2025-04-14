@@ -1,4 +1,4 @@
-from sqlalchemy import String, Column, DateTime, Float, ForeignKey, Date, func
+from sqlalchemy import String, Column, DateTime, Float, ForeignKey, Date, func, Integer
 from connection.config import base
 from sqlalchemy.orm import relationship
 
@@ -12,7 +12,7 @@ class shiftRegistration(base):
     total_gain = Column(Float)
     total_outs = Column(Float)
     date_shift = Column(Date(), default=func.current_date(), nullable=False)
-    ref_premises = Column(String(60), ForeignKey("premises.ref_premises"), nullable=False)
+    ref_premises = Column(Integer, ForeignKey("premises.ref_premises"), nullable=True)
 
     tbill = relationship("billRegistrastion", back_populates="tshift")
     tworker = relationship("workerRegistrastion", back_populates="tshift")

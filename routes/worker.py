@@ -97,12 +97,11 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         new_shift = shiftRegistration(
             id=get_words_worker(company_id, worker_user.document),
             start_time=now,
-            ref_shift= generate_shift_reference(db)
+            ref_shift=generate_shift_reference(db)
         )
         db.add(new_shift)
         db.commit()
 
-        # Retornar la respuesta de inicio de sesión con rol y confirmación
         return {
             "status": "Inicio de sesión exitoso",
             "role": db_worker.wrole,
@@ -123,6 +122,9 @@ async def delete_collaborators(company_id:str,document:str, db:Session = Depends
         
         if worker is None:
                 raise HTTPException(status_code=404,detail="Trabajador no encontrado")
+        
+        if worker.wrole == "Gerente":
+            raise HTTPException(status_code=401, detail="No se puede inactivar el gerente de la empresa")
             
         worker.active = False
         db.commit()

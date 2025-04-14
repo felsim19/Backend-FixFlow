@@ -182,6 +182,19 @@ async def get_company_vault(loggedCompany:str,color:str, db:Session=Depends(get_
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.put("/company/{loggedCompany}/number/{newnumber}", response_model=status)
+async def putNumberCompany(loggedCompany:str,newnumber:str, db:Session=Depends(get_db)): 
+    try:
+        company = db.query(companyRegistration).filter(companyRegistration.company_user == loggedCompany).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Compañia no encontrada")
+        company.number = newnumber
+        db.commit()
+        db.refresh(company)
+        return status(status="Numero de telefono actualizado")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.put("/OutFlowVault/{loggedcompany}", response_model=status)
 async def OutFlowVault(loggedcompany:str, changes:vault, db:Session=Depends(get_db)):
