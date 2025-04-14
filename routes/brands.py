@@ -75,3 +75,20 @@ async def get_idBrands(name: str, company: str, db: Session = Depends(get_db)):
     except Exception as e:
         logging.error(f"Exception occurred: {e}")  # Debugging line
         raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+
+@router.put("/Brands/Edit/{id}", response_model=status)
+async def updateBrand(id:int, brand:brand, db:Session=Depends(get_db)):
+    try:
+        existing_brand = db.query(brandsRegistration).filter(brandsRegistration.id == id).first()   
+
+        if not existing_brand:
+            raise HTTPException(status_code=404, detail="Marca no encontrada")
+
+        existing_brand.name = brand.name
+        db.commit()
+        db.refresh(existing_brand)
+
+        return status(status="Marca actualizada exitosamente")
+    except HTTPException:
+        raise HTTPException(status_code=500, detail=str(e))

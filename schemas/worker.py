@@ -1,6 +1,5 @@
 from pydantic import BaseModel as bm
 from enum import Enum
-from typing import Optional
 
 class Wrole(str, Enum):
     admin = "Administrador"
@@ -18,9 +17,8 @@ class statusworker(bm):
     status:str
     role:str
     wname:str
-    shift:Optional[str] = None
+    shift:str
     id:str
-    is_first_manager:bool = False
 
 class workerlogin(bm):
     document:str

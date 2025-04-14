@@ -20,4 +20,5 @@ class somePremises(bm):
 class loginPremises(bm):
     premise_id:int
     password:str
+    startShift:str
 

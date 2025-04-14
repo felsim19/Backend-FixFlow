@@ -92,22 +92,6 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         if not bcrypt.checkpw(worker_user.password.encode('utf-8'), db_worker.password.encode('utf-8')):
             raise HTTPException(status_code=401, detail="Contraseña Incorrecta")
 
-        # Verificar si es el primer gerente
-        workers_count = db.query(workerRegistrastion).filter(
-            workerRegistrastion.company == company_id
-        ).count()
-
-        # Si es el primer trabajador (gerente) y no hay local seleccionado, no crear turno
-        if workers_count == 1 and db_worker.wrole == "Gerente":
-            return {
-                "status": "Inicio de sesión exitoso",
-                "role": db_worker.wrole,
-                "wname": db_worker.wname,
-                "shift": None,
-                "id": db_worker.id,
-                "is_first_manager": True
-            }
-
         # Registrar la hora de inicio del turno
         now = datetime.now()
         new_shift = shiftRegistration(
@@ -118,14 +102,12 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         db.add(new_shift)
         db.commit()
 
-        # Retornar la respuesta de inicio de sesión con rol y confirmación
         return {
             "status": "Inicio de sesión exitoso",
             "role": db_worker.wrole,
             "wname": db_worker.wname,
             "shift": new_shift.ref_shift,
-            "id": db_worker.id,
-            "is_first_manager": False
+            "id": db_worker.id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

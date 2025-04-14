@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from connection.config import get_db
 from models.premises import premisesRegistration
 from models.company import companyRegistration
+from models.shift import shiftRegistration
 from schemas.company import status
 from schemas.premises import premises, somePremises as sp, loginPremises as lp
 import bcrypt
@@ -77,6 +78,15 @@ async def loginPremises(login:lp, db:Session=Depends(get_db)):
         if not bcrypt.checkpw(login.password.encode('utf-8'), premises.password.encode('utf-8')):
             raise HTTPException(status_code=404, detail="Contraseña incorrecta")
         
+        shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == login.startShift).first()
+
+        if not shift:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        
+        if not shift.ref_premises:
+            shift.ref_premises = premises.ref_premises
+            db.commit()
+            db.refresh(shift)
         return status(status="Login exitoso")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
