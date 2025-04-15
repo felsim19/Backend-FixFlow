@@ -36,7 +36,7 @@ async def get_company_color(selected_premises_id:int, db:Session=Depends(get_db)
 async def someDataBill(company:str, db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT ref_premises, name, address
+            SELECT ref_premises, name, address, active
             FROM premises
             WHERE company = :company
         """)
@@ -164,3 +164,30 @@ async def editPremises(changes:editPremises, db:Session=Depends(get_db)):
         return status(status="Local editado correctamente")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.put("/incativePremises/{ref_premises}", response_model=status)
+async def incativePremises(ref_premises:int, db:Session=Depends(get_db)):
+    try:
+        premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
+        if not premise:
+            raise HTTPException(status_code=404, detail="Local no encontrado")
+        premise.active = False
+        db.commit()
+        db.refresh(premise)
+        return status(status="Local desactivado correctamente")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.put("/activePremises/{ref_premises}", response_model=status)
+async def activePremises(ref_premises:int, db:Session=Depends(get_db)):
+    try:
+        premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
+        if not premise:
+            raise HTTPException(status_code=404, detail="Local no encontrado")
+        premise.active = True
+        db.commit()
+        db.refresh(premise)
+        return status(status="Local activado correctamente")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

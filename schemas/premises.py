@@ -18,6 +18,7 @@ class somePremises(bm):
     ref_premises:int
     name:str
     address:str
+    active:bool
     
 class loginPremises(bm):
     premise_id:int
@@ -33,5 +34,6 @@ class somePremisesOutVault(bm):
     wname:str
     date:datetime
     quantity:float
+
     
 
