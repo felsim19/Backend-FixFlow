@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.shift import shiftRegistration
-from models.company import companyRegistration
+from models.premises import premisesRegistration
 from connection.config import get_db
 from schemas.shift import shiftclose, someShift
 from schemas.bill import someBill as bm, someDelivery as sd
@@ -23,8 +23,8 @@ async def get_Brands(ref_shift:str ,db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.put("/closeshift/{ref_shift}/{logedCompany}")
-async def closeshift(ref_shift:str,logedCompany:str, shiftclose:shiftclose, db: Session = Depends(get_db)):
+@router.put("/closeshift/{ref_shift}/{ref_premises}")
+async def closeshift(ref_shift:str,ref_premises:int, shiftclose:shiftclose, db: Session = Depends(get_db)):
     try:
         shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift ).first()
         # Registrar la salida de inicio del turno
@@ -36,12 +36,12 @@ async def closeshift(ref_shift:str,logedCompany:str, shiftclose:shiftclose, db: 
         db.commit()
         db.refresh(shift)
 
-        company = db.query(companyRegistration).filter(companyRegistration.company_user == logedCompany).first()
-        if not company:
-            raise HTTPException(status_code=404, detail="Compañia no existe")
-        company.vault += shiftclose.vault
+        premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
+        if not premise:
+            raise HTTPException(status_code=404, detail="local no existe")
+        premise.vault += shiftclose.vault
         db.commit() 
-        db.refresh(company) 
+        db.refresh(premise) 
 
         return shift
     except Exception as e:
@@ -72,7 +72,8 @@ async def get_shift(company:str,db: Session = Depends(get_db)):
         query = text("""
             SELECT s.* 
             FROM shift as s inner join worker as w on s.id = w.id
-            inner join company as c on w.company = c.company_user where c.company_user = :company;
+            inner join company as c on w.company = c.company_user where c.company_user = :company 
+            ORDER BY s.ref_shift DESC;
         """)
 
         result = db.execute(query, {"company": company}).mappings().all() # Aquí obtenemos las filas como diccionarios
