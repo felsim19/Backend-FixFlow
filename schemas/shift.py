@@ -10,6 +10,7 @@ class shiftclose(bm):
 
 class someShift(bm):
     ref_shift:str
+    id:str
     document:str
     date_shift:date
 
