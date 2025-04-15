@@ -72,7 +72,8 @@ async def get_shift(company:str,db: Session = Depends(get_db)):
         query = text("""
             SELECT s.* 
             FROM shift as s inner join worker as w on s.id = w.id
-            inner join company as c on w.company = c.company_user where c.company_user = :company;
+            inner join company as c on w.company = c.company_user where c.company_user = :company 
+            ORDER BY s.ref_shift DESC;
         """)
 
         result = db.execute(query, {"company": company}).mappings().all() # Aquí obtenemos las filas como diccionarios

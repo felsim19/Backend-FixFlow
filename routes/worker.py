@@ -97,7 +97,8 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
         new_shift = shiftRegistration(
             id=get_words_worker(company_id, worker_user.document),
             start_time=now,
-            ref_shift=generate_shift_reference(db)
+            ref_shift=generate_shift_reference(db),
+            ref_premises=worker_user.premise_id
         )
         db.add(new_shift)
         db.commit()
@@ -107,7 +108,8 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
             "role": db_worker.wrole,
             "wname": db_worker.wname,
             "shift": new_shift.ref_shift,
-            "id": db_worker.id
+            "id": db_worker.id,
+            "document": db_worker.document
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

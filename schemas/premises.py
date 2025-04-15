@@ -1,5 +1,7 @@
 from pydantic import BaseModel as bm
 from enum import Enum
+from typing import Optional
+from datetime import datetime
 
 class typePremises(str, Enum):
     repairService = "Servicio de reparacion de celulares"
@@ -20,5 +22,16 @@ class somePremises(bm):
 class loginPremises(bm):
     premise_id:int
     password:str
-    startShift:str
+    startShift:Optional[str] = None
+
+class editPremises(bm):
+    ref_premises:int
+    name:str
+    address:str
+
+class somePremisesOutVault(bm):
+    wname:str
+    date:datetime
+    quantity:float
+    
 
