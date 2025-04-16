@@ -64,6 +64,14 @@ async def get_worker_count(company_id:str, db:Session=Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/workerDateEntry/{id}")
+async def get_worker_count(id:str, db:Session=Depends(get_db)): 
+    try:
+        worker = db.query(workerRegistrastion).filter(workerRegistrastion.id == id).first()
+        return {"Date" : worker.dateEntry }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/collaborators/{company_id}/workers")
 async def get_collaborators( company_id:str, db:Session = Depends(get_db)):
     try:
