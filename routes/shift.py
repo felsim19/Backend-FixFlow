@@ -24,30 +24,6 @@ async def get_Brands(ref_shift:str ,db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
 
-@router.get("/workerStats/{id}/{ref_premises}")
-async def get_worker_stats(id: str, ref_premises: int, db: Session = Depends(get_db)):
-    try:
-        # Primero verificar si el trabajador existe
-        worker_exists = db.query(workerRegistrastion).filter(workerRegistrastion.id == id).first()
-        if not worker_exists:
-            raise HTTPException(status_code=404, detail="Trabajador no encontrado")
-        
-        # Verificar si el local existe
-        premise_exists = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
-        if not premise_exists:
-            raise HTTPException(status_code=404, detail="Local no encontrado")
-        
-        # Contar los turnos del trabajador en el local específico
-        shift_count = db.query(shiftRegistration).filter(
-            shiftRegistration.id == id,
-            shiftRegistration.ref_premises == ref_premises
-        ).count()
-        
-        return {"count": shift_count}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-
 @router.put("/closeshift/{ref_shift}")
 async def closeshift(
     ref_shift: str,
