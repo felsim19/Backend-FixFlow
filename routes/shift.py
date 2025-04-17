@@ -1,5 +1,6 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.shift import shiftRegistration
@@ -47,11 +48,15 @@ async def get_worker_stats(id: str, ref_premises: int, db: Session = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.put("/closeshift/{ref_shift}/{ref_premises}")
-async def closeshift(ref_shift:str,ref_premises:int, shiftclose:shiftclose, db: Session = Depends(get_db)):
+@router.put("/closeshift/{ref_shift}")
+async def closeshift(
+    ref_shift: str,
+    shiftclose: shiftclose,
+    ref_premises: Optional[int] = Query(None),  
+    db: Session = Depends(get_db)
+):
     try:
-        shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift ).first()
-        # Registrar la salida de inicio del turno
+        shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift).first()
         now = datetime.now()
         shift.finish_time = now
         shift.total_gain = shiftclose.total_gain
@@ -60,14 +65,16 @@ async def closeshift(ref_shift:str,ref_premises:int, shiftclose:shiftclose, db: 
         db.commit()
         db.refresh(shift)
 
-        premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
-        if not premise:
-            raise HTTPException(status_code=404, detail="local no existe")
-        premise.vault += shiftclose.vault
-        db.commit() 
-        db.refresh(premise) 
+        if ref_premises is not None:
+            premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
+            if not premise:
+                raise HTTPException(status_code=404, detail="local no existe")
+            premise.vault += shiftclose.vault
+            db.commit()
+            db.refresh(premise)
 
         return shift
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
