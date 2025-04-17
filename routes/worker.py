@@ -91,7 +91,7 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
 
         # Validar que el trabajador exista
         if db_worker is None:
-            raise HTTPException(status_code=400, detail="Nombre de usuario no existe")
+            raise HTTPException(status_code=400, detail="Documento no registrado.")
         
         if db_worker.active == False:
             raise HTTPException(status_code=401, detail="Trabajador inactivo")
