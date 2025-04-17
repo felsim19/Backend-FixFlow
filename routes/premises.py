@@ -79,7 +79,7 @@ async def newPremises(loggedCompany:str, premises:premises, premises_number:int,
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.get("/someDataOfOutVault/{id}", response_model=list[svo])
+@router.get("/someDataOutVault/{id}", response_model=list[svo])
 async def someDataOutVault(id:int,db: Session = Depends(get_db)):
     try:
     
