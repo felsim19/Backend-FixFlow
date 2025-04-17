@@ -25,3 +25,6 @@ class workerlogin(bm):
     document:str
     password:str
     premise_id:Optional[int] = None
+
+class workerByPremise(bm):
+    wname:str

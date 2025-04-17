@@ -24,6 +24,16 @@ async def get_Brands(ref_shift:str ,db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
 
+@router.get("/shift/premises/{ref_shift}")
+async def get_shift_premise(ref_shift:str ,db: Session = Depends(get_db)):
+    try:
+        shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift ).first()
+        if not shift:
+            raise HTTPException(status_code=404, detail="ese turno no existe")
+        return {"Local": shift.ref_premises}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 
+
 @router.put("/closeshift/{ref_shift}", response_model=status)
 async def closeshift(
     ref_shift: str,
@@ -210,7 +220,7 @@ async def shiftOuts(ref_shift:str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/searchDateShift/{company}/{date_shift}", response_model=list[someShift])
-async def someDataPhone(date_shift:str,company:str,db: Session = Depends(get_db)):
+async def someDataPhoneDateShift(date_shift:str,company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
             SELECT s.ref_shift, s.id, s.date_shift from shift as s 

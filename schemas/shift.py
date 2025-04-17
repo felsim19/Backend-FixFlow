@@ -18,3 +18,8 @@ class someShiftReceived(bm):
     phone_ref:str
     document:str
     date_shift:date
+
+class addPremiseToShift(bm):
+    ref_shift:str
+    ref_premises:int
+

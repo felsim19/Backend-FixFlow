@@ -8,6 +8,7 @@ from models.company import companyRegistration
 from schemas.Vault import vault
 from models.shift import shiftRegistration
 from schemas.company import status
+from schemas.shift import addPremiseToShift as ats
 from schemas.premises import (
     premises,
     somePremises as sp,
@@ -139,8 +140,8 @@ async def someDataOutVault(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/searchWithdrawalsByWorker/{loggedid}/", response_model=list[svo])
-async def someDataOutVault(id: int, db: Session = Depends(get_db)):
+@router.get("/searchWithdrawalsByWorker/{company}/{wname}", response_model=list[svo])
+async def someDataOutVault(company: str, wname: str, db: Session = Depends(get_db)):
     try:
 
         query = text(
@@ -149,18 +150,48 @@ async def someDataOutVault(id: int, db: Session = Depends(get_db)):
             FROM outvault as o 
             INNER JOIN shift as s ON o.ref_shift = s.ref_shift 
             INNER JOIN premises as p ON s.ref_premises = p.ref_premises 
-            WHERE s.ref_premises = :id
+            INNER JOIN company as c ON p.company = c.company_user
+            WHERE c.company_user = :company AND o.wname = :wname
             ORDER BY o.date DESC;       
         """
         )
 
         result = (
-            db.execute(query, {"id": id}).mappings().all()
+            db.execute(query, {"company": company, "wname": wname}).mappings().all()
         )  # Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(
                 status_code=404, detail="No hay dispositivos registrados"
+            )
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/searchWithdrawalsByDate/{company}/{date}", response_model=list[svo])
+async def someDataOutVault(company: str, date: str, db: Session = Depends(get_db)):
+    try:
+
+        query = text(
+            """
+            SELECT o.wname, o.date, o.quantity 
+            FROM outvault as o 
+            INNER JOIN shift as s ON o.ref_shift = s.ref_shift 
+            INNER JOIN premises as p ON s.ref_premises = p.ref_premises 
+            INNER JOIN company as c ON p.company = c.company_user
+            WHERE c.company_user = :company AND DATE(o.date) = :date           
+        """
+        )
+
+        result = (
+            db.execute(query, {"company": company, "date": date}).mappings().all()
+        )  # Aquí obtenemos las filas como diccionarios
+
+        if not result:
+            raise HTTPException(
+                status_code=404, detail="No hay retiros registrados en esta fecha"
             )
 
         return result  # Ya no necesitas convertir manualmente
@@ -286,3 +317,21 @@ async def activePremises(ref_premises: int, db: Session = Depends(get_db)):
         return status(status="Local activado correctamente")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.put("/shift/addpremise", response_model=status)
+async def addPremiseToShift(changes: ats, db: Session = Depends(get_db)):
+    try:
+        shift = (
+            db.query(shiftRegistration)
+            .filter(shiftRegistration.ref_shift == changes.ref_shift)
+            .first()
+        )
+        if not shift:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        shift.ref_premises = changes.ref_premises
+        db.commit()
+        db.refresh(shift)
+        return status(status="Local agregado al turno correctamente")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

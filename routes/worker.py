@@ -1,8 +1,9 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from schemas.company import status
-from schemas.worker import worker, statusworker, workerlogin as wl
+from schemas.worker import worker, statusworker, workerlogin as wl, workerByPremise as wbp
 from models.company import companyRegistration
 from models.worker import workerRegistrastion
 from models.shift import shiftRegistration
@@ -79,6 +80,27 @@ async def get_collaborators( company_id:str, db:Session = Depends(get_db)):
         return clb_list
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/workersByPremise/{premise_id}/{company_id}", response_model=list[wbp])
+async def get_workers_by_premise(premise_id:int, company_id:str, db:Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT DISTINCT w.wname 
+            FROM shift AS s
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN premises AS p ON s.ref_premises = p.ref_premises
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND s.ref_premises = :premises;
+        """)
+
+        result = db.execute(query, {"company": company_id, "premises": premise_id   }).mappings().all()  # Aquí obtenemos las filas como diccionarios
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 
 
 @router.get("/workerTotalShift/{id}")
 async def get_worker_stats(id: str, db: Session = Depends(get_db)):
