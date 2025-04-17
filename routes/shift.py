@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.shift import shiftRegistration
-from models.worker import workerRegistrastion
+from schemas.company import status
 from models.premises import premisesRegistration
 from connection.config import get_db
 from schemas.shift import shiftclose, someShift
@@ -24,7 +24,7 @@ async def get_Brands(ref_shift:str ,db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
 
-@router.put("/closeshift/{ref_shift}")
+@router.put("/closeshift/{ref_shift}", response_model=status)
 async def closeshift(
     ref_shift: str,
     shiftclose: shiftclose,
@@ -32,24 +32,29 @@ async def closeshift(
     db: Session = Depends(get_db)
 ):
     try:
-        shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift).first()
-        now = datetime.now()
-        shift.finish_time = now
-        shift.total_gain = shiftclose.total_gain
-        shift.total_received = shiftclose.total_received
-        shift.total_outs = shiftclose.total_outs
-        db.commit()
-        db.refresh(shift)
-
         if ref_premises is not None:
+            shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift).first()
+            now = datetime.now()
+            shift.finish_time = now
+            shift.total_gain = shiftclose.total_gain
+            shift.total_received = shiftclose.total_received
+            shift.total_outs = shiftclose.total_outs
+            db.commit()
+            db.refresh(shift)
             premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
             if not premise:
                 raise HTTPException(status_code=404, detail="local no existe")
             premise.vault += shiftclose.vault
             db.commit()
             db.refresh(premise)
-
-        return shift
+            return status(status="turno cerrado exitosamente")
+        else:
+            shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift).first()
+            now = datetime.now()
+            shift.finish_time = now
+            db.commit()
+            db.refresh(shift)
+            return status(status="turno cerrado exitosamente")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
