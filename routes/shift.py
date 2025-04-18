@@ -95,10 +95,15 @@ async def someDataShift(company:str,premises:int,db: Session = Depends(get_db)):
 @router.get("/allShiftCompanyPremises/{company}/{premises}")
 async def get_shift(company:str,premises:int,db: Session = Depends(get_db)):
         query = text("""
-            SELECT s.* 
-            FROM shift as s inner join worker as w on s.id = w.id
-            inner join company as c on w.company = c.company_user where c.company_user = :company and s.ref_premises = :premises
-            ORDER BY s.ref_shift DESC;
+            SELECT s.*
+            FROM shift AS s
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = 'fixflow'
+            AND s.ref_premises = 1
+            ORDER BY 
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC; 
         """)
 
         result = db.execute(query, {"company": company, "premises": premises}).mappings().all() # Aquí obtenemos las filas como diccionarios
@@ -220,13 +225,18 @@ async def shiftOuts(ref_shift:str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/searchDateShift/{company}/{date_shift}", response_model=list[someShift])
-async def someDataPhoneDateShift(date_shift:str,company:str,db: Session = Depends(get_db)):
+async def someDataPhoneDateShift(company:str,date_shift:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT s.ref_shift, s.id, s.date_shift from shift as s 
-            INNER JOIN worker AS w ON s.id = w.id
-            INNER JOIN company AS c ON w.company = c.company_user
-            WHERE c.company_user = :company AND s.date_shift = :date_shift;
+            SELECT s.ref_shift, s.id, s.date_shift, w.document from shift as s 
+            inner join worker as w on s.id = w.id
+            INNER JOIN premises as p on s.ref_premises = p.ref_premises
+            INNER JOIN company as c on w.company = c.company_user
+            WHERE s.date_shift = :date_shift
+            AND  c.company_user = :company
+            ORDER BY	            
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC
         """)
 
         result = db.execute(query, {
@@ -247,11 +257,15 @@ async def someDataPhoneDateShift(date_shift:str,company:str,db: Session = Depend
 async def someDataPhone(premises:str,company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT s.ref_shift, s.id, s.date_shift from shift as s 
-            INNER JOIN worker AS w ON s.id = w.id
-            INNER JOIN premises AS p ON s.ref_premises = p.ref_premises
-            INNER JOIN company AS c ON w.company = c.company_user
-            WHERE c.company_user = :company AND s.ref_premises = :premises;
+            SELECT s.ref_shift, s.id, s.date_shift, w.document from shift as s 
+            inner join worker as w on s.id = w.id
+            INNER JOIN premises as p on s.ref_premises = p.ref_premises
+            INNER JOIN company as c on w.company = c.company_user
+            WHERE p.ref_premises = :premises
+            AND  c.company_user = :company
+            ORDER BY	            
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC
         """)
 
         result = db.execute(query, {
