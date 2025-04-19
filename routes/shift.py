@@ -7,7 +7,7 @@ from models.shift import shiftRegistration
 from schemas.company import status
 from models.premises import premisesRegistration
 from connection.config import get_db
-from schemas.shift import shiftclose, someShift
+from schemas.shift import shiftclose, someShift, someShiftSearch as sss
 from schemas.bill import someBill as bm, someDelivery as sd
 from schemas.outflow import someOutflow as so
 
@@ -92,21 +92,41 @@ async def someDataShift(company:str,premises:int,db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/allShiftCompanyPremises/{company}/{premises}")
-async def get_shift(company:str,premises:int,db: Session = Depends(get_db)):
+@router.get("/allShiftCompanyPremises/{company}")
+async def get_shift(company:str,db: Session = Depends(get_db)):
         query = text("""
             SELECT s.*
             FROM shift AS s
             INNER JOIN worker AS w ON s.id = w.id
             INNER JOIN company AS c ON w.company = c.company_user
-            WHERE c.company_user = 'fixflow'
-            AND s.ref_premises = 1
+            WHERE c.company_user = :company
             ORDER BY 
             SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
             CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC; 
         """)
 
-        result = db.execute(query, {"company": company, "premises": premises}).mappings().all() # Aquí obtenemos las filas como diccionarios
+        result = db.execute(query, {"company": company}).mappings().all() # Aquí obtenemos las filas como diccionarios
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+
+@router.get("/allShiftCompanyPremises/excel/{premise_Id}")
+async def get_shift(premise_Id:int,db: Session = Depends(get_db)):
+        query = text("""
+            SELECT s.*
+            FROM shift AS s
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE s.ref_premises = :premise_Id
+            ORDER BY 
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC; 
+        """)
+
+        result = db.execute(query, {"premise_Id": premise_Id}).mappings().all() # Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
@@ -224,11 +244,11 @@ async def shiftOuts(ref_shift:str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/searchDateShift/{company}/{date_shift}", response_model=list[someShift])
+@router.get("/searchDateShift/{company}/{date_shift}", response_model=list[sss])
 async def someDataPhoneDateShift(company:str,date_shift:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT s.ref_shift, s.id, s.date_shift, w.document from shift as s 
+            SELECT s.ref_shift, s.ref_premises,s.id, s.date_shift, w.document, s.start_time, s.finish_time from shift as s 
             inner join worker as w on s.id = w.id
             INNER JOIN premises as p on s.ref_premises = p.ref_premises
             INNER JOIN company as c on w.company = c.company_user
@@ -253,11 +273,11 @@ async def someDataPhoneDateShift(company:str,date_shift:str,db: Session = Depend
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/searchpremiseshift/{company}/{premises}", response_model=list[someShift])
+@router.get("/searchpremiseshift/{company}/{premises}", response_model=list[sss])
 async def someDataPhone(premises:str,company:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT s.ref_shift, s.id, s.date_shift, w.document from shift as s 
+            SELECT s.ref_shift, s.ref_premises, s.id, s.date_shift, w.document, s.start_time, s.finish_time from shift as s 
             inner join worker as w on s.id = w.id
             INNER JOIN premises as p on s.ref_premises = p.ref_premises
             INNER JOIN company as c on w.company = c.company_user
@@ -270,7 +290,7 @@ async def someDataPhone(premises:str,company:str,db: Session = Depends(get_db)):
 
         result = db.execute(query, {
             "company": company,
-            "premises": f"{premises}"  # Permite búsquedas parciales
+            "premises": premises  # Permite búsquedas parciales
         }).mappings().all()
 
         if not result:

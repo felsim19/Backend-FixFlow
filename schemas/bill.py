@@ -15,6 +15,14 @@ class someBill(bm):
     bill_number:str
     client_name:str
     entry_date:date
+    
+class someBillExcel(bm):
+    bill_number:str
+    client_name:str
+    entry_date:date
+    wname:str
+    client_phone:str
+    total_price:float
 
 class someBillRepair(bm):
     bill_number:str

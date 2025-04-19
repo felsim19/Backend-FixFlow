@@ -8,3 +8,8 @@ class outflow(bm):
 class someOutflow(bm):
     details: str
     price: float
+
+class outflowExcel(bm):
+    ref_outflow: int
+    details: str
+    price: float

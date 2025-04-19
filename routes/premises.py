@@ -15,6 +15,7 @@ from schemas.premises import (
     loginPremises as lp,
     editPremises,
     somePremisesOutVault as svo,
+    premisesCompany as pc
 )
 import bcrypt
 
@@ -30,6 +31,26 @@ async def get_worker_count(company_id: str, db: Session = Depends(get_db)):
             .count()
         )
         return {"count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/premises/{id}")
+async def get_worker_wname(id:int, db:Session=Depends(get_db)): 
+    try:
+        premises = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == id).first()
+        
+        if premises is None:
+            raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+            
+        return {"name" : premises.name }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/getPremisesCompany/{company}", response_model=list[pc])
+async def getPremisesCompany(company:str, db: Session = Depends(get_db)):
+    try:
+        premises = db.query(premisesRegistration).filter(premisesRegistration.company == company).all()
+        return premises
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

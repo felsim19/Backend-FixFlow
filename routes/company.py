@@ -223,6 +223,21 @@ async def get_company_number(loggedCompany: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/company/{loggedCompany}/nit")
+async def get_company_number(loggedCompany: str, db: Session = Depends(get_db)):
+    try:
+        company = (
+            db.query(companyRegistration)
+            .filter(companyRegistration.company_user == loggedCompany)
+            .first()
+        )
+        if not company:
+            raise HTTPException(status_code=404, detail="Compañia no encontrada")
+        return {"nit": company.nit}
+    except Exception as e:  
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/company/{loggedCompany}/baseColor/{color}", response_model=status)
 async def get_company_vault(
     loggedCompany: str, color: str, db: Session = Depends(get_db)
@@ -372,6 +387,23 @@ async def insertCompany(changes: NewPassword, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(company)
         return status(status="La compañia a cambiado de contraseña correctamente")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+@router.put("/changeNit/{company}/{newNit}", response_model=status)
+async def insertCompany(company:str, newNit:str, db: Session = Depends(get_db)):
+    try:
+        company = (
+            db.query(companyRegistration)
+            .filter(companyRegistration.company_user == company)
+            .first()
+        )
+        company.nit = newNit
+        db.commit()
+        db.refresh(company)
+        return status(status="La compañia a cambiado de nit correctamente")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

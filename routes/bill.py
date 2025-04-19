@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from schemas.company import status
-from schemas.bill import bill,someBill as sb, someBillRepair as sbr, billRepairPhone as brp, statusBill
+from schemas.bill import bill,someBill as sb, someBillRepair as sbr, billRepairPhone as brp, statusBill, someBillExcel as sbe
 from connection.config import get_db
 from models.bill import billRegistrastion
 from models.phone import phoneRegistrastion
@@ -51,19 +51,45 @@ async def createBillwithPhones(company:str, bill: bill, db: Session = Depends(ge
     except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/someDataOfBill/{company}", response_model=list[sb])
-async def someDataBill(company:str,db: Session = Depends(get_db)):
+@router.get("/someDataOfBill/{premises}", response_model=list[sb])
+async def someDataBill(premises:int,db: Session = Depends(get_db)):
     try:
     
         query = text("""
             SELECT b.bill_number, b.client_name, b.entry_date 
             FROM bill as b inner join shift as s on b.ref_shift = s.ref_shift
-            inner join worker as w on s.id = w.id inner join 
-            company as c on w.company = c.company_user where c.company_user = :company
-            ORDER BY b.bill_number DESC;
+            inner join premises as p on s.ref_premises = p.ref_premises
+            where p.ref_premises = :premises
+            ORDER BY	            
+            SUBSTRING_INDEX(b.bill_number, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(b.bill_number, '_', -1) AS UNSIGNED) DESC;
         """)
 
-        result = db.execute(query, {"company": company}).mappings().all() # Aquí obtenemos las filas como diccionarios
+        result = db.execute(query, {"premises": premises}).mappings().all() # Aquí obtenemos las filas como diccionarios
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/someDataOfBill/{premises}/excel", response_model=list[sbe])
+async def someDataBill(premises:int,db: Session = Depends(get_db)):
+    try:
+    
+        query = text("""
+            SELECT b.bill_number, b.client_name, b.entry_date, b.wname, b.client_phone, b.total_price
+            FROM bill as b inner join shift as s on b.ref_shift = s.ref_shift
+            inner join premises as p on s.ref_premises = p.ref_premises
+            where p.ref_premises = :premises
+            ORDER BY	            
+            SUBSTRING_INDEX(b.bill_number, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(b.bill_number, '_', -1) AS UNSIGNED) DESC;
+        """)
+
+        result = db.execute(query, {"premises": premises}).mappings().all() # Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")

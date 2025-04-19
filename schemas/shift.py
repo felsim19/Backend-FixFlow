@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel as bm
+from typing import Optional
 
 class shiftclose(bm):
     total_received:float
@@ -23,3 +24,11 @@ class addPremiseToShift(bm):
     ref_shift:str
     ref_premises:int
 
+class someShiftSearch(bm):
+    ref_shift:str
+    ref_premises:int
+    start_time:datetime
+    id:str
+    finish_time:Optional[datetime] 
+    document:str
+    date_shift:date

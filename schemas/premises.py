@@ -13,6 +13,11 @@ class premises(bm):
     address:str
     password:str
     company:str
+
+class premisesCompany(bm):
+    name:str
+    ref_premises:int
+    company:str 
     
 class somePremises(bm):
     ref_premises:int
