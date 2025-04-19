@@ -26,19 +26,19 @@ async def insertCompany(delivery:delivery,db:Session=Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/allSalesCompany/{company}", response_model=list[deliveryExcel])
-async def allSalesCompany(company:str, db: Session = Depends(get_db)):
+@router.get("/allSalesPremises/{premises_id}", response_model=list[deliveryExcel])
+async def allSalesPremises(premises_id:int, db: Session = Depends(get_db)):
     try:
         # Consulta que incluye el filtro de la compañía y permite búsquedas parciales por número de factura
         query = text("""
-            select d.ref_delivery, d.product, d.sale, d.original_price, d.revenue_price from delivery 
+            select d.ref_delivery, d.product, d.sale, d.original_price, d.revenue_price, w.wname, s.date_shift from delivery 
             as d inner join shift as s on d.ref_shift = s.ref_shift 
-            inner join premises as p on s.ref_premises = p.ref_premises where p.company = :company
+            inner join worker as w on s.id = w.id where s.ref_premises = :premises_id
         """)
 
         # Ejecutar la consulta con los parámetros proporcionados
         result = db.execute(query, {
-            "company": company, # Permite búsquedas parciales
+            "premises_id": premises_id, # Permite búsquedas parciales
         }).mappings().all()
         return result
     except Exception as e:
