@@ -55,12 +55,12 @@ async def getPremisesCompany(company:str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/premises/{selected_premises_id}")
-async def get_company_color(selected_premises_id: int, db: Session = Depends(get_db)):
+@router.get("/premises/vault/{premises_id}")
+async def getPremisesVault(premises_id: int, db: Session = Depends(get_db)):
     try:
         premise = (
             db.query(premisesRegistration)
-            .filter(premisesRegistration.ref_premises == selected_premises_id)
+            .filter(premisesRegistration.ref_premises == premises_id)
             .first()
         )
         if not premise:
@@ -139,9 +139,8 @@ async def someDataOutVault(id: int, db: Session = Depends(get_db)):
             """
             SELECT o.wname, o.date, o.quantity 
             FROM outvault as o 
-            INNER JOIN shift as s ON o.ref_shift = s.ref_shift 
-            INNER JOIN premises as p ON s.ref_premises = p.ref_premises 
-            WHERE s.ref_premises = :id
+            INNER JOIN premises as p ON o.ref_premises = p.ref_premises 
+            WHERE p.ref_premises = :id
             ORDER BY o.date DESC;       
         """
         )
@@ -162,7 +161,7 @@ async def someDataOutVault(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/searchWithdrawalsByWorker/{company}/{wname}", response_model=list[svo])
-async def someDataOutVault(company: str, wname: str, db: Session = Depends(get_db)):
+async def searchWithdrawalsByWorker(company: str, wname: str, db: Session = Depends(get_db)):
     try:
 
         query = text(
@@ -275,7 +274,9 @@ async def OutFlowVault(changes: vault, db: Session = Depends(get_db)):
         db.refresh(premise)
 
         data = outVaultRegistration(
-            ref_shift=changes.ref_shift, quantity=changes.quantity, wname=changes.wname
+            ref_premises=changes.ref_premises, 
+            quantity=changes.quantity, 
+            wname=changes.wname
         )
         db.add(data)
         db.commit()

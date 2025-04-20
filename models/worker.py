@@ -3,7 +3,7 @@ from sqlalchemy import String, Column, Enum, ForeignKey, Boolean, Date
 from connection.config import base
 from sqlalchemy.orm import relationship
 
-class workerRegistrastion(base):
+class workerRegistration(base):
     __tablename__ = "worker"
     id = Column(String(80), primary_key=True, nullable=False)
     wname = Column(String(50), nullable=False)

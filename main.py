@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import company, worker, bill, brands, devices, phone, delivery, outlow, shift, reparation, premises
+from routes import company, worker, bill, brands, devices, phone, delivery, outlow, shift, reparation, premises, subcription
 from connection.config import engine
 from models.company import base
 from models.worker import base
@@ -13,6 +13,7 @@ from models.delivery import base
 from models.outflow import base
 from models.reparation import base
 from models.premises import base
+from models.subscription import base
 
 app = FastAPI()
 
@@ -38,5 +39,5 @@ app.include_router(devices.router)
 app.include_router(phone.router)
 app.include_router(reparation.router)
 app.include_router(premises.router)
-
+app.include_router(subcription.router)
 

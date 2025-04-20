@@ -6,9 +6,9 @@ from datetime import datetime
 class outVaultRegistration(base):
     __tablename__ = "outvault"
     ref_Vault = Column(Integer,primary_key=True, autoincrement=True)
-    ref_shift = Column(String(60), ForeignKey("shift.ref_shift"), nullable=False)
+    ref_premises = Column(Integer, ForeignKey("premises.ref_premises"), nullable=False)
     quantity = Column(Float(), nullable=False)
     wname = Column(String(60), nullable=False)
     date = Column(DateTime, default=datetime.now)
 
-    tshift = relationship("shiftRegistration", back_populates="toutflowVault")
+    tpremises = relationship("premisesRegistration", back_populates="toutflowVault")

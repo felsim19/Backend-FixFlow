@@ -34,6 +34,9 @@ async def allSalesPremises(premises_id:int, db: Session = Depends(get_db)):
             select d.ref_delivery, d.product, d.sale, d.original_price, d.revenue_price, w.wname, s.date_shift from delivery 
             as d inner join shift as s on d.ref_shift = s.ref_shift 
             inner join worker as w on s.id = w.id where s.ref_premises = :premises_id
+            ORDER BY	            
+            SUBSTRING_INDEX(d.ref_delivery, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(d.ref_delivery, '_', -1) AS UNSIGNED) DESC;
         """)
 
         # Ejecutar la consulta con los parámetros proporcionados

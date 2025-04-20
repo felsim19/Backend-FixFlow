@@ -14,9 +14,10 @@ from schemas.company import (
     NewPassword,
 )
 from models.company import companyRegistration
+from models.subscription import SubscriptionRegistration
 from models.recoveryPassword import PasswordRecovery
 from connection.config import get_db
-from utils import is_valid_mail, generate_pin, create_verification_token
+from utils import is_valid_mail, generate_pin, create_verification_token, calculate_payment_date
 from dotenv import load_dotenv
 import bcrypt
 import os
@@ -98,6 +99,23 @@ async def insertCompany(company: company, db: Session = Depends(get_db)):
 
         fm = FastMail(conf)
         await fm.send_message(msg)
+
+        # Calcular la fecha de pago usando la función calculate_payment_date
+        date_start = datetime.now()
+        payment_date = calculate_payment_date(date_start)
+
+        subscription = SubscriptionRegistration(
+            company=company.company_user,
+            plan=company.subscription_plan,
+            price=company.subscription_price,
+            date_start=date_start,
+            paymentDate=payment_date,
+            added_premises=0,
+            active=True
+        )
+        db.add(subscription)
+        db.commit()
+        db.refresh(subscription)
 
         return status(
             status="La compañía ha sido registrada. Por favor verifica tu email."

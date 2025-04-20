@@ -15,3 +15,4 @@ class premisesRegistration(base):
     
     tcompany = relationship("companyRegistration", back_populates="tpremises")
     tshift = relationship("shiftRegistration", back_populates="tpremises")
+    toutflowVault = relationship("outVaultRegistration", back_populates="tpremises")

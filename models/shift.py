@@ -15,9 +15,8 @@ class shiftRegistration(base):
     ref_premises = Column(Integer, ForeignKey("premises.ref_premises"), nullable=True)
 
     tbill = relationship("billRegistrastion", back_populates="tshift")
-    tworker = relationship("workerRegistrastion", back_populates="tshift")
+    tworker = relationship("workerRegistration", back_populates="tshift")
     tdelivery = relationship("deliveryRegistration", back_populates="tshift")
     toutflow = relationship("outflowRegistration", back_populates="tshift")
-    toutflowVault = relationship("outVaultRegistration", back_populates="tshift")
     treparation = relationship("reparationRegistration", back_populates="tshift")
     tpremises = relationship("premisesRegistration", back_populates="tshift")

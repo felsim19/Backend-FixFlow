@@ -13,7 +13,8 @@ class companyRegistration(base):
     nit = Column(String(20))
     quantity_premises = Column(Integer(), default=3)
     
-    tworker = relationship("workerRegistrastion", back_populates="tcompany")
+    tworker = relationship("workerRegistration", back_populates="tcompany")
     tpassword = relationship("PasswordRecovery", back_populates="tcompany")
     tbrand = relationship("brandsRegistration", back_populates="tcompany")
     tpremises = relationship("premisesRegistration", back_populates="tcompany")
+    tsubscription = relationship("SubscriptionRegistration", back_populates="tcompany")

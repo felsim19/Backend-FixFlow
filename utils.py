@@ -1,7 +1,8 @@
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from fastapi import Request
 from datetime import datetime, timedelta
 from models.shift import shiftRegistration
@@ -13,6 +14,29 @@ import os
 
 
 regex_mail = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+def calculate_payment_date(date_start: date) -> datetime:
+    """
+    Calcula la fecha de pago basada en la fecha de inicio.
+    La fecha de pago será 1 mes y 5 días después de la fecha de inicio.
+    
+    Args:
+        date_start: Fecha de inicio de la suscripción
+        
+    Returns:
+        datetime: Fecha de pago calculada
+    """
+    # Convertir date a datetime si es necesario
+    if isinstance(date_start, date):
+        date_start = datetime.combine(date_start, datetime.min.time())
+    
+    # Añadir 1 mes usando relativedelta para manejar correctamente los cambios de mes
+    one_month_later = date_start + relativedelta(months=1)
+    
+    # Añadir 5 días adicionales
+    payment_date = one_month_later + timedelta(days=5)
+    
+    return payment_date
 
 def is_valid_mail(mail:str) -> bool:
     return re.match(regex_mail,mail) is not None

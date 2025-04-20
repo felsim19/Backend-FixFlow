@@ -32,6 +32,9 @@ async def allOutflowsPremises(premises_id:int, db: Session = Depends(get_db)):
             select o.ref_outflow, o.details, o.price, w.wname, s.date_shift from outflow 
             as o inner join shift as s on o.ref_shift = s.ref_shift 
             inner join worker as w on s.id = w.id where s.ref_premises = :premises_id
+            ORDER BY	            
+            SUBSTRING_INDEX(o.ref_outflow, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(o.ref_outflow, '_', -1) AS UNSIGNED) DESC;
         """)
 
         # Ejecutar la consulta con los parámetros proporcionados
