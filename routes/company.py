@@ -212,7 +212,7 @@ async def getImageCompany(loggedCompany: str, db: Session = Depends(get_db)):
 
 
 @router.get("/company/{loggedCompany}/baseColor")
-async def get_company_color(loggedCompany: str, db: Session = Depends(get_db)):
+async def getCompanyColor(loggedCompany: str, db: Session = Depends(get_db)):
     try:
         company = (
             db.query(companyRegistration)
@@ -227,7 +227,7 @@ async def get_company_color(loggedCompany: str, db: Session = Depends(get_db)):
 
 
 @router.get("/company/{loggedCompany}/number")
-async def get_company_number(loggedCompany: str, db: Session = Depends(get_db)):
+async def getCompanyNumber(loggedCompany: str, db: Session = Depends(get_db)):
     try:
         company = (
             db.query(companyRegistration)
@@ -242,7 +242,7 @@ async def get_company_number(loggedCompany: str, db: Session = Depends(get_db)):
 
 
 @router.get("/company/{loggedCompany}/nit")
-async def get_company_number(loggedCompany: str, db: Session = Depends(get_db)):
+async def getCompanyNit(loggedCompany: str, db: Session = Depends(get_db)):
     try:
         company = (
             db.query(companyRegistration)

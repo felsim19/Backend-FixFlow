@@ -58,7 +58,7 @@ async def insertWorker(nameCompany:str,worker:worker, db:Session=Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/company/{company_id}/count")
-async def get_worker_count(company_id:str, db:Session=Depends(get_db)): 
+async def getWorkerCount(company_id:str, db:Session=Depends(get_db)): 
     try:
         count = db.query(workerRegistration).filter(workerRegistration.company == company_id).count()
         return {"count" : count }
@@ -66,7 +66,7 @@ async def get_worker_count(company_id:str, db:Session=Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/workerDateEntry/{id}")
-async def get_worker_count(id:str, db:Session=Depends(get_db)): 
+async def getWorkerDateEntry(id:str, db:Session=Depends(get_db)): 
     try:
         worker = db.query(workerRegistration).filter(workerRegistration.id == id).first()
         return {"Date" : worker.dateEntry }

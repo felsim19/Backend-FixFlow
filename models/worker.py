@@ -12,7 +12,7 @@ class workerRegistration(base):
     company = Column(String(50), ForeignKey('company.company_user'), nullable=False)
     wrole = Column(Enum("Gerente","Administrador","Tecnico"), default="Gerente", nullable=False)
     active = Column(Boolean, default="false")
-    dateEntry = Column(Date, default=date.today())
+    dateEntry = Column(Date, default=date.today)
     
     #Relacion birideccional hacia la company
     tcompany = relationship("companyRegistration", back_populates="tworker")
