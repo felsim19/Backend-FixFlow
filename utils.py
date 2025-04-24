@@ -1,18 +1,74 @@
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from fastapi import Request
 from datetime import datetime, timedelta
 from models.shift import shiftRegistration
 from models.bill import billRegistrastion
 from models.phone import phoneRegistrastion
+import hashlib
 import re
 import random
 import os
+import string
 
 
 regex_mail = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+def generate_payment_id():
+    """
+    Genera un ID de pago con formato j1k2l3_m4n5o6_timestamp
+    Combina letras, números y un timestamp para crear un identificador único y legible
+    
+    Returns:
+        str: ID de pago generado con formato j1k2l3_m4n5o6_timestamp
+    """
+    # Generar 3 pares de letra-número para la primera parte
+    first_part = ""
+    for _ in range(2):
+        letter = random.choice(string.ascii_lowercase)
+        number = random.choice(string.digits)
+        first_part += letter + number
+    
+    # Generar 3 pares de letra-número para la segunda parte
+    second_part = ""
+    for _ in range(2):
+        letter = random.choice(string.ascii_lowercase)
+        number = random.choice(string.digits)
+        second_part += letter + number
+    
+    # Obtener el timestamp actual (segundos desde epoch)
+    timestamp = int(datetime.now().timestamp())
+    
+    # Combinar las partes con guiones bajos
+    payment_id = f"{first_part}_{second_part}_{timestamp}"
+    
+    return payment_id
+
+def calculate_payment_date(date_start: date) -> datetime:
+    """
+    Calcula la fecha de pago basada en la fecha de inicio.
+    La fecha de pago será 1 mes y 5 días después de la fecha de inicio.
+    
+    Args:
+        date_start: Fecha de inicio de la suscripción
+        
+    Returns:
+        datetime: Fecha de pago calculada
+    """
+    # Convertir date a datetime si es necesario
+    if isinstance(date_start, date):
+        date_start = datetime.combine(date_start, datetime.min.time())
+    
+    # Añadir 1 mes usando relativedelta para manejar correctamente los cambios de mes
+    one_month_later = date_start + relativedelta(months=1)
+    
+    # Añadir 5 días adicionales
+    payment_date = one_month_later + timedelta(days=5)
+    
+    return payment_date
 
 def is_valid_mail(mail:str) -> bool:
     return re.match(regex_mail,mail) is not None
@@ -78,3 +134,34 @@ def create_verification_token(email: str):
     to_encode = {"sub": email, "exp": expire}
     encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM"))
     return encoded_jwt
+
+def generateDataIntegrity(Identifier, Amount, Currency):
+    """
+    Genera una firma de integridad para la API de Bold
+    
+    Args:
+        Identifier: Identificador único del pago
+        Amount: Monto del pago
+        Currency: Moneda del pago
+        
+    Returns:
+        str: Firma de integridad en formato hexadecimal
+    """
+    # Obtener la clave secreta desde las variables de entorno
+    SecretKey = os.getenv("BOLD_SECRET_KEY", "")
+    
+    # Verificar que la clave secreta esté disponible
+    if not SecretKey:
+        raise ValueError("BOLD_SECRET_KEY no está configurada en las variables de entorno")
+    
+    # Concatenar los valores para generar la firma
+    cadena_concatenada = f"{Identifier}{Amount}{Currency}{SecretKey}"
+    
+    # Crear un objeto hash SHA-256
+    m = hashlib.sha256()
+    # Actualizar el objeto hash con la cadena codificada en UTF-8
+    m.update(cadena_concatenada.encode())
+    # Obtener el hash en formato hexadecimal
+    hash_hex = m.hexdigest()
+    # Imprimir el hash
+    return hash_hex

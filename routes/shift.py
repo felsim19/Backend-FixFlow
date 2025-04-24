@@ -1,11 +1,13 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.shift import shiftRegistration
-from models.company import companyRegistration
+from schemas.company import status
+from models.premises import premisesRegistration
 from connection.config import get_db
-from schemas.shift import shiftclose, someShift
+from schemas.shift import shiftclose, someShift, someShiftSearch as sss
 from schemas.bill import someBill as bm, someDelivery as sd
 from schemas.outflow import someOutflow as so
 
@@ -20,43 +22,66 @@ async def get_Brands(ref_shift:str ,db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="ese turno no existe")
         return shift
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+        raise HTTPException(status_code=500, detail=str(e)) 
 
-@router.put("/closeshift/{ref_shift}/{logedCompany}")
-async def closeshift(ref_shift:str,logedCompany:str, shiftclose:shiftclose, db: Session = Depends(get_db)):
+@router.get("/shift/premises/{ref_shift}")
+async def get_shift_premise(ref_shift:str ,db: Session = Depends(get_db)):
     try:
         shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift ).first()
-        # Registrar la salida de inicio del turno
-        now = datetime.now()
-        shift.finish_time = now
-        shift.total_gain = shiftclose.total_gain
-        shift.total_received = shiftclose.total_received
-        shift.total_outs = shiftclose.total_outs
-        db.commit()
-        db.refresh(shift)
+        if not shift:
+            raise HTTPException(status_code=404, detail="ese turno no existe")
+        return {"Local": shift.ref_premises}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 
 
-        company = db.query(companyRegistration).filter(companyRegistration.company_user == logedCompany).first()
-        if not company:
-            raise HTTPException(status_code=404, detail="Compañia no existe")
-        company.vault += shiftclose.vault
-        db.commit() 
-        db.refresh(company) 
+@router.put("/closeshift/{ref_shift}", response_model=status)
+async def closeshift(
+    ref_shift: str,
+    shiftclose: shiftclose,
+    ref_premises: Optional[int] = Query(None),  
+    db: Session = Depends(get_db)
+):
+    try:
+        if ref_premises is not None:
+            shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift).first()
+            now = datetime.now()
+            shift.finish_time = now
+            shift.total_gain = shiftclose.total_gain
+            shift.total_received = shiftclose.total_received
+            shift.total_outs = shiftclose.total_outs
+            db.commit()
+            db.refresh(shift)
+            premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
+            if not premise:
+                raise HTTPException(status_code=404, detail="local no existe")
+            premise.vault += shiftclose.vault
+            db.commit()
+            db.refresh(premise)
+            return status(status="turno cerrado exitosamente")
+        else:
+            shift = db.query(shiftRegistration).filter(shiftRegistration.ref_shift == ref_shift).first()
+            now = datetime.now()
+            shift.finish_time = now
+            db.commit()
+            db.refresh(shift)
+            return status(status="turno cerrado exitosamente")
 
-        return shift
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/someDataOfShift", response_model=list[someShift])
-async def someDataBill(db: Session = Depends(get_db)):
+@router.get("/someDataOfShift/{company}/{premises}", response_model=list[someShift])
+async def someDataShift(company:str,premises:int,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT ref_shift, document, date_shift 
-            FROM shift
+            SELECT s.ref_shift, s.id, s.date_shift, w.document from shift as s 
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN premises AS p ON s.ref_premises = p.ref_premises
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company AND s.ref_premises = :premises;
         """)
 
-        result = db.execute(query).mappings().all()  # Aquí obtenemos las filas como diccionarios
+        result = db.execute(query, {"company": company, "premises": premises}).mappings().all()  # Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
@@ -67,15 +92,41 @@ async def someDataBill(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/allShiftCompany/{company}")
+@router.get("/allShiftCompanyPremises/{company}")
 async def get_shift(company:str,db: Session = Depends(get_db)):
         query = text("""
-            SELECT s.* 
-            FROM shift as s inner join worker as w on s.id = w.id
-            inner join company as c on w.company = c.company_user where c.company_user = :company;
+            SELECT s.*
+            FROM shift AS s
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE c.company_user = :company
+            ORDER BY 
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC; 
         """)
 
         result = db.execute(query, {"company": company}).mappings().all() # Aquí obtenemos las filas como diccionarios
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+
+@router.get("/allShiftCompanyPremises/excel/{premise_Id}")
+async def get_shift(premise_Id:int,db: Session = Depends(get_db)):
+        query = text("""
+            SELECT s.*
+            FROM shift AS s
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE s.ref_premises = :premise_Id
+            ORDER BY 
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC; 
+        """)
+
+        result = db.execute(query, {"premise_Id": premise_Id}).mappings().all() # Aquí obtenemos las filas como diccionarios
 
         if not result:
             raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
@@ -193,19 +244,76 @@ async def shiftOuts(ref_shift:str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/searchDateShift/{company}/{date_shift}", response_model=list[someShift])
-async def someDataPhone(date_shift:str,company:str,db: Session = Depends(get_db)):
+@router.get("/searchDateShift/{company}/{date_shift}", response_model=list[sss])
+async def someDataPhoneDateShift(company:str,date_shift:str,db: Session = Depends(get_db)):
     try:
         query = text("""
-            SELECT s.ref_shift, s.document, s.date_shift from shift as s 
-            INNER JOIN worker AS w ON s.id = w.id
-            INNER JOIN company AS c ON w.company = c.company_user
-            WHERE c.company_user = :company AND s.date_shift = :date_shift;
+            SELECT s.ref_shift, s.ref_premises,s.id, s.date_shift, w.document, s.start_time, s.finish_time from shift as s 
+            inner join worker as w on s.id = w.id
+            INNER JOIN premises as p on s.ref_premises = p.ref_premises
+            INNER JOIN company as c on w.company = c.company_user
+            WHERE s.date_shift = :date_shift
+            AND  c.company_user = :company
+            ORDER BY	            
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC
         """)
 
         result = db.execute(query, {
             "company": company,
             "date_shift": f"{date_shift}"  # Permite búsquedas parciales
+        }).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.get("/searchpremiseshift/{company}/{premises}", response_model=list[sss])
+async def someDataPhone(premises:str,company:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT s.ref_shift, s.ref_premises, s.id, s.date_shift, w.document, s.start_time, s.finish_time from shift as s 
+            inner join worker as w on s.id = w.id
+            INNER JOIN premises as p on s.ref_premises = p.ref_premises
+            INNER JOIN company as c on w.company = c.company_user
+            WHERE p.ref_premises = :premises
+            AND  c.company_user = :company
+            ORDER BY	            
+            SUBSTRING_INDEX(s.ref_shift, '_', 1) DESC, 
+            CAST(SUBSTRING_INDEX(s.ref_shift, '_', -1) AS UNSIGNED) DESC
+        """)
+
+        result = db.execute(query, {
+            "company": company,
+            "premises": premises  # Permite búsquedas parciales
+        }).mappings().all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="No hay dispositivos registrados")
+
+        return result  # Ya no necesitas convertir manualmente
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/searchWname/{document}}", response_model=list[someShift])
+async def someDataPhone(document:str,db: Session = Depends(get_db)):
+    try:
+        query = text("""
+            SELECT s.ref_shift, s.document, s.date_shift from shift as s 
+            INNER JOIN worker AS w ON s.id = w.id
+            INNER JOIN company AS c ON w.company = c.company_user
+            WHERE w.document = :document;
+        """)
+
+        result = db.execute(query, {
+            "document": document,
         }).mappings().all()
 
         if not result:
