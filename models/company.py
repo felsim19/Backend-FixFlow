@@ -11,7 +11,7 @@ class companyRegistration(base):
     number = Column(String(10), nullable=False)
     verifiedMail = Column(Boolean(), default=False) 
     nit = Column(String(20))
-    quantity_premises = Column(Integer(), default=3)
+    quantity_premises = Column(Integer(), default=1)
     
     tworker = relationship("workerRegistration", back_populates="tcompany")
     tpassword = relationship("PasswordRecovery", back_populates="tcompany")

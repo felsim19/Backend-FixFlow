@@ -6,6 +6,8 @@ class shiftclose(bm):
     total_received:float
     total_gain:float
     total_outs:float
+    total_cash:float
+    total_platform:float
     vault:float
 
 

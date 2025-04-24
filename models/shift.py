@@ -12,6 +12,8 @@ class shiftRegistration(base):
     total_received = Column(Float)
     total_gain = Column(Float)
     total_outs = Column(Float)
+    total_cash = Column(Float)
+    total_platform = Column(Float)
     date_shift = Column(Date(), default=date.today, nullable=False)
     ref_premises = Column(Integer, ForeignKey("premises.ref_premises"), nullable=True)
 

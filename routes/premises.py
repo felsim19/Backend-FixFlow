@@ -168,10 +168,9 @@ async def searchWithdrawalsByWorker(company: str, wname: str, db: Session = Depe
             """
             SELECT o.wname, o.date, o.quantity 
             FROM outvault as o 
-            INNER JOIN shift as s ON o.ref_shift = s.ref_shift 
-            INNER JOIN premises as p ON s.ref_premises = p.ref_premises 
+            INNER JOIN premises as p ON o.ref_premises = p.ref_premises 
             INNER JOIN company as c ON p.company = c.company_user
-            WHERE c.company_user = :company AND o.wname = :wname
+            WHERE c.company_user = "fixflow" AND o.wname = "Felipe"
             ORDER BY o.date DESC;       
         """
         )
@@ -198,8 +197,7 @@ async def someDataOutVault(company: str, date: str, db: Session = Depends(get_db
             """
             SELECT o.wname, o.date, o.quantity 
             FROM outvault as o 
-            INNER JOIN shift as s ON o.ref_shift = s.ref_shift 
-            INNER JOIN premises as p ON s.ref_premises = p.ref_premises 
+            INNER JOIN premises as p ON o.ref_premises = p.ref_premises 
             INNER JOIN company as c ON p.company = c.company_user
             WHERE c.company_user = :company AND DATE(o.date) = :date           
         """

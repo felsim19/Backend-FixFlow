@@ -70,7 +70,7 @@ async def insertCompany(company: company, db: Session = Depends(get_db)):
         verification_token = create_verification_token(company.mail)
 
         # URL de verificación (usa tu dominio real en producción)
-        verification_url = f"http://localhost:8000/api/verify-email?token={verification_token}&redirect_to=http://localhost:5173/loginCompany"
+        verification_url = f"{os.getenv('URL_BACKEND')}/api/verify-email?token={verification_token}&redirect_to={os.getenv('FRONTEND_URL')}/loginCompany"
 
         # Enviar email
         msg = MessageSchema(
