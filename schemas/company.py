@@ -5,9 +5,9 @@ class status(bm):
     status:str
 
 class plan(str, Enum):
-    basic = "Basico"
-    pro = "Pro"
-    premium = "Premium"
+    sell = "Venta"
+    tech = "Tecnico"
+    distributor = "Distribuidor"
 
 class statusName(bm):
     status:str
