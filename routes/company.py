@@ -439,47 +439,41 @@ async def resend_confirmation_code(
         if db_company is None:
             raise HTTPException(status_code=400, detail="Compañia no existe")
 
-        # Verificar si ya existe un PIN activo
-        existing_recovery = (
-            db.query(PasswordRecovery)
-            .filter(PasswordRecovery.company == db_company.company_user)
-            .first()
-        )
+        # Crear token de verificación
+        verification_token = create_verification_token(emailUser.Email)
 
-        if existing_recovery and datetime.now() < existing_recovery.expires_at:
-            # Reenviar el mismo PIN si aún es válido
-            pin = existing_recovery.pin
-            expiration_time = existing_recovery.expires_at
-        else:
-            # Generar nuevo PIN si no existe o ha expirado
-            pin = generate_pin(6)
-            expiration_time = datetime.now() + timedelta(minutes=15)
+        # URL de verificación
+        verification_url = f"{os.getenv('URL_BACKEND')}/api/verify-email?token={verification_token}&redirect_to={os.getenv('FRONTEND_URL')}/loginCompany"
 
-            if existing_recovery:
-                # Actualizar registro existente
-                existing_recovery.pin = pin
-                existing_recovery.expires_at = expiration_time
-            else:
-                # Crear nuevo registro
-                data = PasswordRecovery(
-                    company=db_company.company_user, pin=pin, expires_at=expiration_time
-                )
-                db.add(data)
-
-        db.commit()
-
-        # Enviar el correo
+        # Enviar email
         msg = MessageSchema(
-            subject="Confrimacion del Correo - Nuevo código",
+            subject="Confirma tu correo electrónico y activa tu cuenta en Fixflow",
             recipients=[emailUser.Email],
-            body=f"Su nuevo PIN es: {pin} \nEste PIN es válido por 15 minutos",
+            body=f"""
+                <div style="background-color: #363636; padding: 40px 0; text-align: center;">
+                    <div style="max-width: 600px; margin: 0 auto; border: 2px solid #d84b17; border-radius: 8px; padding: 32px; font-family: Arial, sans-serif; color: white;">
+                        <h2 style="color: #d84b17;">¡Bienvenido a Fixflow!</h2>
+                        <p>Estamos encantados de que te unas a nuestra comunidad.</p>
+                        <p>Para comenzar a usar tu cuenta, por favor confirma tu correo electrónico haciendo clic en el siguiente botón:</p>
+                        <div style="margin: 24px 0;">
+                            <a href="{verification_url}" 
+                               style="background-color: #d84b17; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                               Verificar correo
+                            </a>
+                        </div>
+                        <p>Este enlace estará disponible por <strong>24 horas</strong>. Si caduca, podrás solicitar uno nuevo desde la plataforma.</p>
+                        <p>Si no fuiste tú quien se registró, puedes ignorar este mensaje.</p>
+                        <p style="margin-top: 32px;">Gracias por confiar en nosotros,<br>— El equipo de <strong>Fixflow</strong></p>
+                    </div>
+                </div>
+                """,
             subtype="html",
         )
 
         fm = FastMail(conf)
         await fm.send_message(msg)
 
-        return status(status="Se ha reenviado el código de confirmación a su correo")
+        return status(status="Se ha reenviado el correo de verificación")
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
