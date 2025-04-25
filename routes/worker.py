@@ -161,8 +161,8 @@ async def loginworker(company_id: str, worker_user: wl, db: Session = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/inactiveCollaborators/{company_id}/{document}/{documentActive}", response_model=status)
-async def delete_collaborators(company_id:str,document:str, documentActive:str, db:Session = Depends(get_db)):
+@router.put("/inactiveCollaborators/{company_id}/{document}", response_model=status)
+async def delete_collaborators(company_id:str,document:str,db:Session = Depends(get_db)):
     try:
         worker = db.query(workerRegistration).filter(
             workerRegistration.company == company_id,
@@ -175,8 +175,14 @@ async def delete_collaborators(company_id:str,document:str, documentActive:str, 
         if worker.wrole == "Gerente":
             raise HTTPException(status_code=401, detail="No se puede descativar el gerente de la empresa")
         
-        if worker.document == documentActive:
-            raise HTTPException(status_code=401, detail="No se puede descativar el trabajador que actualmente esta una sesion activa")
+        # Verificar si el trabajador tiene un turno activo (finish_time es NULL)
+        active_shift = db.query(shiftRegistration).filter(
+            shiftRegistration.id == worker.id,
+            shiftRegistration.finish_time == None
+        ).first()
+        
+        if active_shift:
+            raise HTTPException(status_code=401, detail="No se puede desactivar el trabajador que actualmente tiene una sesión activa")
             
         worker.active = False
         db.commit()

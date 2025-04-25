@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from models.company import companyRegistration
 from models.subscription import SubscriptionRegistration
 from connection.config import get_db
 from utils import generateDataIntegrity, generate_payment_id
@@ -22,8 +23,8 @@ async def get_company_number(loggedCompany: str, db: Session = Depends(get_db)):
     except Exception as e:  
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.put("/company/plan/{loggedCompany}/{newPlan}")
-async def update_company_plan(loggedCompany: str, newPlan: str, db: Session = Depends(get_db)):
+@router.put("/company/plan/{loggedCompany}/{newPlan}/{quantityPremises}")
+async def update_company_plan(loggedCompany: str, newPlan: str, quantityPremises: int, db: Session = Depends(get_db)):
     try:
         companyPlanSubscription = (
             db.query(SubscriptionRegistration)
@@ -34,8 +35,13 @@ async def update_company_plan(loggedCompany: str, newPlan: str, db: Session = De
             raise HTTPException(status_code=404, detail="suscripcion no encontrada")
         companyPlanSubscription.plan = newPlan
         db.commit()
+        company = db.query(companyRegistration).filter(companyRegistration.company_user == loggedCompany).first()
+        company.quantity_premises = quantityPremises
+        db.commit()
+        db.refresh(company)
         return {"message": "plan actualizado correctamente"}
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 

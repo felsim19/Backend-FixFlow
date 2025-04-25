@@ -49,6 +49,8 @@ async def closeshift(
             shift.total_gain = shiftclose.total_gain
             shift.total_received = shiftclose.total_received
             shift.total_outs = shiftclose.total_outs
+            shift.total_cash = shiftclose.total_cash
+            shift.total_platform = shiftclose.total_platform
             db.commit()
             db.refresh(shift)
             premise = db.query(premisesRegistration).filter(premisesRegistration.ref_premises == ref_premises).first()
