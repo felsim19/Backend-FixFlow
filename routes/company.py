@@ -97,26 +97,20 @@ async def insertCompany(company: company, db: Session = Depends(get_db)):
             subtype="html",
         )
 
-        fm = FastMail(conf)
-        await fm.send_message(msg)
-
-        # Calcular la fecha de pago usando la función calculate_payment_date
-        date_start = datetime.now()
-        payment_date = calculate_payment_date(date_start)
+        #crear tabla de suscripcion
 
         subscription = SubscriptionRegistration(
             company=company.company_user,
             plan=company.subscription_plan,
             price=company.subscription_price,
-            date_start=date_start,
-            paymentDate=payment_date,
-            added_premises=0,
-            active=True
+            active=False,
         )
         db.add(subscription)
         db.commit()
         db.refresh(subscription)
 
+        fm = FastMail(conf)
+        await fm.send_message(msg)
         return status(
             status="La compañía ha sido registrada. Por favor verifica tu email."
         )
@@ -476,4 +470,29 @@ async def resend_confirmation_code(
         return status(status="Se ha reenviado el correo de verificación")
     except Exception as e:
         db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/company/{company_user}/subscription-status")
+async def get_subscription_status(company_user: str, db: Session = Depends(get_db)):
+    try:
+        subscription = (
+            db.query(SubscriptionRegistration)
+            .filter(SubscriptionRegistration.company == company_user)
+            .first()
+        )
+        if not subscription:
+            return {"active": False, "message": "No tienes suscripción activa"}
+        # Si la fecha de pago ya pasó, la suscripción está vencida
+        is_active = subscription.active and (datetime.now().date() <= subscription.payment_date)
+        return {
+            "active": is_active,
+            "payment_date": str(subscription.payment_date),
+            "message": (
+                "Suscripción activa"
+                if is_active
+                else "Tu suscripción ha expirado, por favor realiza el pago"
+            ),
+        }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

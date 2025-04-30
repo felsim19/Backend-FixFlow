@@ -56,10 +56,18 @@ async def getHash(identifier: str, amount: str, currency: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/suscription/orderId")
-async def getOrderId():
+@router.get("/suscription/orderId/{company}/{plan}")
+async def getOrderId(company: str, plan: str):
     try:
-        orderId = generate_payment_id()
+        orderId = generate_payment_id(company, plan)
         return {"orderId": orderId}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/suscription/status/{company}")
+async def getStatusCompany(company: str, db: Session = Depends(get_db)):
+    try:
+        payment = db.query(SubscriptionRegistration).filter(SubscriptionRegistration.company == company).first()
+        return {"status": payment.active}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

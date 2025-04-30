@@ -20,10 +20,18 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True, 
-    allow_methods=["*"],
-    allow_headers=["*"]
+    allow_origins=[
+        "https://tryventofixflow.vercel.app/", # frontend vercel
+        "https://fixflow-tau.vercel.app", # frontend vercel
+        "http://localhost:5173",  # Si pruebas localmente frontend
+        "http://localhost:8000",  # Si pruebas localmente backend
+        "https://fixflow.loca.lt", # url de local.lt    
+        "https://backend-fixflow-production.up.railway.app/"  # url de railway
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 base.metadata.create_all(bind=engine)

@@ -17,33 +17,22 @@ import string
 
 regex_mail = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
-def generate_payment_id():
+def generate_payment_id(company: str, plan: str) -> str:
     """
-    Genera un ID de pago con formato j1k2l3_m4n5o6_timestamp
-    Combina letras, números y un timestamp para crear un identificador único y legible
+    Genera un ID de pago con formato fixflow-{plan}-{timestamp}
+    
+    Args:
+        company (str): Nombre de la compañía (no se usa en el formato actual, pero se recibe por compatibilidad)
+        plan (str): Nombre del plan (ej: 'basic', 'premium', etc)
     
     Returns:
-        str: ID de pago generado con formato j1k2l3_m4n5o6_timestamp
+        str: ID de pago generado con formato fixflow-{plan}-{timestamp}
     """
-    # Generar 3 pares de letra-número para la primera parte
-    first_part = ""
-    for _ in range(2):
-        letter = random.choice(string.ascii_lowercase)
-        number = random.choice(string.digits)
-        first_part += letter + number
+    # Obtener el timestamp actual en milisegundos
+    timestamp = int(datetime.now().timestamp() * 1000)
     
-    # Generar 3 pares de letra-número para la segunda parte
-    second_part = ""
-    for _ in range(2):
-        letter = random.choice(string.ascii_lowercase)
-        number = random.choice(string.digits)
-        second_part += letter + number
-    
-    # Obtener el timestamp actual (segundos desde epoch)
-    timestamp = int(datetime.now().timestamp())
-    
-    # Combinar las partes con guiones bajos
-    payment_id = f"{first_part}_{second_part}_{timestamp}"
+    # Generar el payment_id en el formato deseado
+    payment_id = f"{company}-{plan}-{timestamp}"
     
     return payment_id
 

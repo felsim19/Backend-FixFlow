@@ -10,6 +10,7 @@ import hashlib
 from datetime import datetime
 import logging
 import base64
+from dateutil.relativedelta import relativedelta
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -116,49 +117,49 @@ def verify_signature(payload, signature):
 async def process_sale_approved(reference, payment_id, payment_data, db):
     """
     Procesa un evento de venta aprobada.
-    
-    Args:
-        reference: Referencia del pago
-        payment_id: ID del pago en Bold
-        payment_data: Datos completos del pago
-        db: Sesión de base de datos
     """
     try:
-        # Extraer información de la referencia (formato: company-plan-payment_id)
+        logger.info(f"Iniciando procesamiento de venta aprobada para referencia: {reference}")
+        
         parts = reference.split("-")
-        if len(parts) >= 3:
-            company = parts[0]
-            plan = parts[1]
-            
-            # Buscar la suscripción correspondiente
-            subscription = (
-                db.query(SubscriptionRegistration)
-                .filter(SubscriptionRegistration.company == company)
-                .first()
-            )
-            
-            if subscription:
-                # Actualizar la suscripción
-                subscription.active = True
-                subscription.payment_date = datetime.now()
-                subscription.payment_id = payment_id
-                subscription.payment_method = payment_data.get("payment_method", "")
-                subscription.payment_status = "completed"
-                
-                # Si el plan ha cambiado, actualizarlo
-                if subscription.plan != plan:
-                    subscription.plan = plan
-                
-                db.commit()
-                logger.info(f"Suscripción actualizada para {company}: {plan}")
-            else:
-                logger.warning(f"No se encontró suscripción para {company}")
-        else:
+        if len(parts) < 3:
             logger.warning(f"Formato de referencia inválido: {reference}")
-    
+            return
+
+        company = parts[0]
+        plan = parts[1]
+        amount_data = payment_data.get("amount", {})
+        price = amount_data.get("total", 0)
+        
+        logger.info(f"Datos extraídos - Compañía: {company}, Plan: {plan}, Precio: {price}")
+
+        date_start = datetime.now().date()
+        payment_date = date_start + relativedelta(months=1, days=5)
+
+        # Buscar la suscripción correspondiente
+        subscription = (
+            db.query(SubscriptionRegistration)
+            .filter(SubscriptionRegistration.company == company)
+            .first()
+        )
+
+        if subscription:
+            logger.info(f"Actualizando suscripción existente para {company}")
+            subscription.active = True
+            subscription.date_start = date_start  # Fecha actual sin hora
+            subscription.paymentDate = payment_date  # 1 mes después y 5 dias
+            subscription.plan = plan
+            subscription.price = price
+            subscription.payment_id = payment_id
+            subscription.payment_method = payment_data.get("payment_method", "")
+            subscription.payment_status = "completed"
+            db.commit()
+            db.refresh(subscription)
+
     except Exception as e:
-        logger.error(f"Error procesando venta aprobada: {str(e)}")
+        logger.error(f"Error procesando venta aprobada: {str(e)}", exc_info=True)
         db.rollback()
+        raise  # Re-lanza la excepción para que se registre en el webhook principal
 
 async def process_sale_rejected(reference, payment_id, payment_data, db):
     """
